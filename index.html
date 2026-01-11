@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英単語学習ドリル - 大学受験対応</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <h1>英単語学習ドリル</h1>
+            <nav class="nav">
+                <button id="homeBtn" class="nav-btn active">ホーム</button>
+                <button id="drillBtn" class="nav-btn">ドリル</button>
+                <button id="analysisBtn" class="nav-btn">分析</button>
+                <button id="settingsBtn" class="nav-btn">設定</button>
+            </nav>
+        </header>
+
+        <main class="main">
+            <!-- ホーム画面 -->
+            <div id="homeScreen" class="screen active">
+                <div class="dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>今日の学習</h3>
+                            <div class="stat-value" id="todayCount">0</div>
+                            <div class="stat-label">問題</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>正答率</h3>
+                            <div class="stat-value" id="accuracyRate">0%</div>
+                            <div class="stat-label">全体平均</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>平均回答時間</h3>
+                            <div class="stat-value" id="avgTime">0s</div>
+                            <div class="stat-label">1問あたり</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>合格可能性</h3>
+                            <div class="stat-value" id="passRate">0%</div>
+                            <div class="stat-label" id="targetUniv">志望大学</div>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-actions">
+                        <button class="action-btn primary" id="startDrillBtn">ドリル開始</button>
+                        <button class="action-btn secondary" id="weakPointBtn">苦手問題</button>
+                        <button class="action-btn secondary" id="reviewBtn">復習</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ドリル画面 -->
+            <div id="drillScreen" class="screen">
+                <div class="drill-container">
+                    <div class="drill-header">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="drill-info">
+                            <span id="questionNumber">1/10</span>
+                            <div class="timer-container">
+                                <div class="timer-circle" id="timerCircle">
+                                    <span id="timer">5</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="question-card">
+                        <div class="question-text" id="questionText">Loading...</div>
+                        <div class="options" id="optionsContainer">
+                            <!-- 選択肢がここに動的に追加される -->
+                        </div>
+                    </div>
+                    
+                    <div class="drill-controls">
+                        <button id="skipBtn" class="control-btn">スキップ</button>
+                        <button id="hintBtn" class="control-btn">ヒント</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分析画面 -->
+            <div id="analysisScreen" class="screen">
+                <div class="analysis-container">
+                    <h2>学習分析</h2>
+                    
+                    <div class="analysis-tabs">
+                        <button class="tab-btn active" data-tab="performance">成績分析</button>
+                        <button class="tab-btn" data-tab="speed">速度分析</button>
+                        <button class="tab-btn" data-tab="wordAnalysis">単語別分析</button>
+                        <button class="tab-btn" data-tab="weakness">苦手分析</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div id="performanceTab" class="tab-panel active">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                        <div id="speedTab" class="tab-panel">
+                            <canvas id="speedChart"></canvas>
+                        </div>
+                        <div id="wordAnalysisTab" class="tab-panel">
+                            <div class="word-analysis-controls">
+                                <input type="text" id="wordSearchInput" placeholder="単語を検索..." class="search-input">
+                                <select id="chartTypeSelect" class="sort-select">
+                                    <option value="scatter">散布図（正答率 vs 回答時間）</option>
+                                    <option value="bar">棒グラフ（正答率順）</option>
+                                    <option value="bubble">バブルチャート（出題回数込み）</option>
+                                </select>
+                                <select id="levelFilter" class="sort-select">
+                                    <option value="all">全レベル</option>
+                                    <option value="basic">基礎レベル</option>
+                                    <option value="standard">標準レベル</option>
+                                    <option value="advanced">上級レベル</option>
+                                </select>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="wordAnalysisChart"></canvas>
+                            </div>
+                            <div id="wordAnalysisList" class="word-analysis-list"></div>
+                        </div>
+                        <div id="weaknessTab" class="tab-panel">
+                            <div id="weaknessList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 設定画面 -->
+            <div id="settingsScreen" class="screen">
+                <div class="settings-container">
+                    <h2>設定</h2>
+                    
+                    <div class="setting-group">
+                        <h3>志望大学</h3>
+                        <select id="targetUniversity">
+                            <option value="tokyo">東京大学</option>
+                            <option value="kyoto">京都大学</option>
+                            <option value="waseda">早稲田大学</option>
+                            <option value="keio">慶應義塾大学</option>
+                            <option value="sophia">上智大学</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <h3>難易度レベル</h3>
+                        <select id="difficultyLevel">
+                            <option value="basic">基礎レベル</option>
+                            <option value="standard">標準レベル</option>
+                            <option value="advanced">上級レベル</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <h3>1セッションの問題数</h3>
+                        <input type="range" id="questionsPerSession" min="5" max="20" value="10">
+                        <span id="questionsCount">10</span>問
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
