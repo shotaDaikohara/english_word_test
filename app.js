@@ -567,8 +567,9 @@ class VocabMaster {
             const hint = question.correctAnswer.charAt(0) + '...';
             this.showToast(`ヒント: ${hint}`, 'info');
         }
-    }    /
-/ ドリル終了
+    }
+
+    // ドリル終了
     finishDrill() {
         const totalTime = Date.now() - this.startTime;
         const correctCount = this.userAnswers.filter(a => a.correct).length;
@@ -696,6 +697,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) {
             loadingScreen.style.display = 'none';
+        }
+        
+        const homeScreen = document.getElementById('homeScreen');
+        if (homeScreen) {
+            homeScreen.style.display = 'block';
         }
         
         alert('アプリの初期化に失敗しました。ページを再読み込みしてください。');
