@@ -251,6 +251,13 @@ body {
     margin-top: 0.25rem;
 }
 
+.stat-sublabel {
+    font-size: 0.7rem;
+    color: var(--gray-400);
+    margin-top: 0.1rem;
+    display: block;
+}
+
 /* Section */
 .section {
     margin-bottom: 2rem;

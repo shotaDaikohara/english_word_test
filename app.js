@@ -235,10 +235,10 @@ class VocabMaster {
         document.getElementById('todayCount').textContent = stats.todayCount;
         document.getElementById('accuracyRate').textContent = stats.accuracyRate + '%';
         document.getElementById('avgTime').textContent = stats.avgTime + 's';
+        
+        // Update university name and coverage rate
         document.getElementById('targetUniv').textContent = targetUniv.name;
-
-        // Calculate and display coverage rate
-        const coverageRate = this.calculatePassRate(stats, targetUniv);
+        const coverageRate = Math.round(this.calculateWordCoverageRate());
         document.getElementById('passRate').textContent = coverageRate + '%';
 
         // Update streak counter
@@ -293,12 +293,6 @@ class VocabMaster {
         };
     }
 
-    calculatePassRate(stats, targetUniv) {
-        // 試験範囲カバー率を計算
-        const coverageRate = this.calculateCoverageRate(this.settings.targetUniversity);
-        return Math.round(coverageRate);
-    }
-
     calculateCoverageRate(university) {
         const universityWordList = this.universityWords[university];
         if (!universityWordList) return 0;
@@ -321,6 +315,11 @@ class VocabMaster {
         });
 
         return totalWeight > 0 ? (masteredWeight / totalWeight) * 100 : 0;
+    }
+
+    // 単語カバー率を計算（メイン表示用）
+    calculateWordCoverageRate() {
+        return this.calculateCoverageRate(this.settings.targetUniversity);
     }
 
     updateLevelProgress() {
@@ -1674,4 +1673,61 @@ class VocabMaster {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
     new VocabMaster();
-});
+});    s
+howCoverageAnalysis() {
+        const container = document.getElementById('coverageList');
+        if (!container) return;
+
+        const universityData = this.getUniversityData();
+        const coverageData = [];
+
+        Object.keys(universityData).forEach(univKey => {
+            const univ = universityData[univKey];
+            const coverageRate = this.calculateCoverageRate(univKey);
+            const universityWordList = this.universityWords[univKey] || [];
+            const totalWords = universityWordList.length;
+            
+            const history = this.getStoredData('history') || [];
+            const masteredWords = this.getMasteredWords(history);
+            const masteredWordSet = new Set(masteredWords.map(w => w.word));
+            const masteredCount = universityWordList.filter(w => masteredWordSet.has(w.word)).length;
+
+            coverageData.push({
+                name: univ.name,
+                key: univKey,
+                coverage: Math.round(coverageRate),
+                masteredCount: masteredCount,
+                totalWords: totalWords,
+                isTarget: univKey === this.settings.targetUniversity
+            });
+        });
+
+        // カバー率順にソート
+        coverageData.sort((a, b) => b.coverage - a.coverage);
+
+        container.innerHTML = coverageData.map(data => `
+            <div class="coverage-item ${data.isTarget ? 'target' : ''}">
+                <div class="coverage-header">
+                    <span class="university-name">${data.name}</span>
+                    <span class="coverage-rate coverage-${this.getCoverageClass(data.coverage)}">${data.coverage}%</span>
+                </div>
+                <div class="coverage-details">
+                    <div class="coverage-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${data.coverage}%"></div>
+                        </div>
+                    </div>
+                    <div class="coverage-stats">
+                        マスター単語: ${data.masteredCount}/${data.totalWords}語
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    getCoverageClass(coverage) {
+        if (coverage >= 80) return 'high';
+        if (coverage >= 60) return 'medium';
+        return 'low';
+    }
+}
