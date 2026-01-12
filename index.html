@@ -3,52 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英単語学習ドリル - 大学受験対応</title>
+    <title>VocabMaster - 英単語学習プラットフォーム</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 </head>
 <body>
     <div id="app">
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="loading-screen">
+            <div class="loading-content">
+                <div class="loading-logo">📚</div>
+                <h2>VocabMaster</h2>
+                <div class="loading-spinner"></div>
+                <p>単語データを読み込み中...</p>
+            </div>
+        </div>
+
+        <!-- Header -->
         <header class="header">
-            <h1>英単語学習ドリル</h1>
-            <nav class="nav">
-                <button id="homeBtn" class="nav-btn active">ホーム</button>
-                <button id="drillBtn" class="nav-btn">ドリル</button>
-                <button id="analysisBtn" class="nav-btn">分析</button>
-                <button id="settingsBtn" class="nav-btn">設定</button>
-            </nav>
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">📚</span>
+                    <span class="logo-text">VocabMaster</span>
+                </div>
+                <nav class="nav">
+                    <button id="homeBtn" class="nav-btn active" data-screen="home">
+                        <span class="nav-icon">🏠</span>
+                        <span class="nav-text">ホーム</span>
+                    </button>
+                    <button id="drillBtn" class="nav-btn" data-screen="drill">
+                        <span class="nav-icon">⚡</span>
+                        <span class="nav-text">ドリル</span>
+                    </button>
+                    <button id="analysisBtn" class="nav-btn" data-screen="analysis">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">分析</span>
+                    </button>
+                    <button id="settingsBtn" class="nav-btn" data-screen="settings">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">設定</span>
+                    </button>
+                </nav>
+                <div class="user-info">
+                    <div class="streak-counter">
+                        <span class="streak-icon">🔥</span>
+                        <span id="streakCount">0</span>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <main class="main">
             <!-- ホーム画面 -->
             <div id="homeScreen" class="screen active">
                 <div class="dashboard">
+                    <div class="welcome-section">
+                        <h1 class="welcome-title">学習を続けましょう！</h1>
+                        <p class="welcome-subtitle">今日も英単語をマスターしていきましょう</p>
+                    </div>
+
                     <div class="stats-grid">
-                        <div class="stat-card">
-                            <h3>今日の学習</h3>
-                            <div class="stat-value" id="todayCount">0</div>
-                            <div class="stat-label">問題</div>
+                        <div class="stat-card primary">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <h3>今日の学習</h3>
+                                <div class="stat-value" id="todayCount">0</div>
+                                <div class="stat-label">問題完了</div>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <h3>正答率</h3>
-                            <div class="stat-value" id="accuracyRate">0%</div>
-                            <div class="stat-label">全体平均</div>
+                        <div class="stat-card success">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <h3>正答率</h3>
+                                <div class="stat-value" id="accuracyRate">0%</div>
+                                <div class="stat-label">全体平均</div>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <h3>平均回答時間</h3>
-                            <div class="stat-value" id="avgTime">0s</div>
-                            <div class="stat-label">1問あたり</div>
+                        <div class="stat-card warning">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-content">
+                                <h3>平均回答時間</h3>
+                                <div class="stat-value" id="avgTime">0s</div>
+                                <div class="stat-label">1問あたり</div>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <h3>合格可能性</h3>
-                            <div class="stat-value" id="passRate">0%</div>
-                            <div class="stat-label" id="targetUniv">志望大学</div>
+                        <div class="stat-card info">
+                            <div class="stat-icon">🎓</div>
+                            <div class="stat-content">
+                                <h3>合格可能性</h3>
+                                <div class="stat-value" id="passRate">0%</div>
+                                <div class="stat-label" id="targetUniv">志望大学</div>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="quick-actions">
-                        <button class="action-btn primary" id="startDrillBtn">ドリル開始</button>
-                        <button class="action-btn secondary" id="weakPointBtn">苦手問題</button>
-                        <button class="action-btn secondary" id="reviewBtn">復習</button>
+                        <button class="action-btn primary large" id="startDrillBtn">
+                            <span class="btn-icon">🚀</span>
+                            <span class="btn-text">ドリル開始</span>
+                            <span class="btn-subtitle">新しい単語に挑戦</span>
+                        </button>
+                        <button class="action-btn secondary" id="weakPointBtn">
+                            <span class="btn-icon">🎯</span>
+                            <span class="btn-text">苦手克服</span>
+                        </button>
+                        <button class="action-btn secondary" id="reviewBtn">
+                            <span class="btn-icon">📝</span>
+                            <span class="btn-text">復習</span>
+                        </button>
+                    </div>
+
+                    <div class="progress-section">
+                        <h3>学習進捗</h3>
+                        <div class="level-progress">
+                            <div class="level-item">
+                                <span class="level-name">基礎レベル</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="basicProgress"></div>
+                                    </div>
+                                    <span class="progress-text" id="basicProgressText">0/50</span>
+                                </div>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-name">標準レベル</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="standardProgress"></div>
+                                    </div>
+                                    <span class="progress-text" id="standardProgressText">0/50</span>
+                                </div>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-name">上級レベル</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="advancedProgress"></div>
+                                    </div>
+                                    <span class="progress-text" id="advancedProgressText">0/50</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -57,29 +155,41 @@
             <div id="drillScreen" class="screen">
                 <div class="drill-container">
                     <div class="drill-header">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill"></div>
+                        <button class="back-btn" id="backToHomeBtn">
+                            <span>←</span> ホームに戻る
+                        </button>
+                        <div class="drill-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <span class="progress-text" id="questionNumber">1/10</span>
                         </div>
-                        <div class="drill-info">
-                            <span id="questionNumber">1/10</span>
-                            <div class="timer-container">
-                                <div class="timer-circle" id="timerCircle">
-                                    <span id="timer">5</span>
-                                </div>
+                        <div class="timer-container">
+                            <div class="timer-circle" id="timerCircle">
+                                <span id="timer">5</span>
                             </div>
                         </div>
                     </div>
                     
                     <div class="question-card">
+                        <div class="question-meta">
+                            <span class="question-level" id="questionLevel">基礎</span>
+                            <span class="question-category" id="questionCategory">動詞</span>
+                        </div>
                         <div class="question-text" id="questionText">Loading...</div>
+                        <div class="question-example" id="questionExample"></div>
                         <div class="options" id="optionsContainer">
                             <!-- 選択肢がここに動的に追加される -->
                         </div>
                     </div>
                     
                     <div class="drill-controls">
-                        <button id="skipBtn" class="control-btn">スキップ</button>
-                        <button id="hintBtn" class="control-btn">ヒント</button>
+                        <button id="skipBtn" class="control-btn secondary">
+                            <span>⏭️</span> スキップ
+                        </button>
+                        <button id="hintBtn" class="control-btn secondary">
+                            <span>💡</span> ヒント
+                        </button>
                     </div>
                 </div>
             </div>
@@ -87,31 +197,62 @@
             <!-- 分析画面 -->
             <div id="analysisScreen" class="screen">
                 <div class="analysis-container">
-                    <h2>学習分析</h2>
+                    <div class="analysis-header">
+                        <h2>学習分析</h2>
+                        <div class="analysis-summary">
+                            <div class="summary-item">
+                                <span class="summary-label">総学習時間</span>
+                                <span class="summary-value" id="totalStudyTime">0分</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">マスター単語数</span>
+                                <span class="summary-value" id="masteredWords">0語</span>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="analysis-tabs">
-                        <button class="tab-btn active" data-tab="performance">成績分析</button>
-                        <button class="tab-btn" data-tab="speed">速度分析</button>
-                        <button class="tab-btn" data-tab="wordAnalysis">単語別分析</button>
-                        <button class="tab-btn" data-tab="weakness">苦手分析</button>
+                        <button class="tab-btn active" data-tab="performance">
+                            <span class="tab-icon">📈</span>
+                            成績分析
+                        </button>
+                        <button class="tab-btn" data-tab="speed">
+                            <span class="tab-icon">⚡</span>
+                            速度分析
+                        </button>
+                        <button class="tab-btn" data-tab="wordAnalysis">
+                            <span class="tab-icon">🔍</span>
+                            単語別分析
+                        </button>
+                        <button class="tab-btn" data-tab="weakness">
+                            <span class="tab-icon">🎯</span>
+                            苦手分析
+                        </button>
                     </div>
                     
                     <div class="tab-content">
                         <div id="performanceTab" class="tab-panel active">
-                            <canvas id="performanceChart"></canvas>
+                            <div class="chart-container">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
                         </div>
                         <div id="speedTab" class="tab-panel">
-                            <canvas id="speedChart"></canvas>
+                            <div class="chart-container">
+                                <canvas id="speedChart"></canvas>
+                            </div>
                         </div>
                         <div id="wordAnalysisTab" class="tab-panel">
                             <div class="word-analysis-controls">
-                                <input type="text" id="wordSearchInput" placeholder="単語を検索..." class="search-input">
-                                <select id="chartTypeSelect" class="sort-select">
+                                <div class="search-container">
+                                    <input type="text" id="wordSearchInput" placeholder="単語を検索..." class="search-input">
+                                    <span class="search-icon">🔍</span>
+                                </div>
+                                <select id="chartTypeSelect" class="select-input">
                                     <option value="scatter">散布図（正答率 vs 回答時間）</option>
                                     <option value="bar">棒グラフ（正答率順）</option>
                                     <option value="bubble">バブルチャート（出題回数込み）</option>
                                 </select>
-                                <select id="levelFilter" class="sort-select">
+                                <select id="levelFilter" class="select-input">
                                     <option value="all">全レベル</option>
                                     <option value="basic">基礎レベル</option>
                                     <option value="standard">標準レベル</option>
@@ -124,7 +265,7 @@
                             <div id="wordAnalysisList" class="word-analysis-list"></div>
                         </div>
                         <div id="weaknessTab" class="tab-panel">
-                            <div id="weaknessList"></div>
+                            <div id="weaknessList" class="weakness-list"></div>
                         </div>
                     </div>
                 </div>
@@ -135,34 +276,125 @@
                 <div class="settings-container">
                     <h2>設定</h2>
                     
-                    <div class="setting-group">
-                        <h3>志望大学</h3>
-                        <select id="targetUniversity">
-                            <option value="tokyo">東京大学</option>
-                            <option value="kyoto">京都大学</option>
-                            <option value="waseda">早稲田大学</option>
-                            <option value="keio">慶應義塾大学</option>
-                            <option value="sophia">上智大学</option>
-                        </select>
+                    <div class="settings-section">
+                        <h3>学習設定</h3>
+                        <div class="setting-group">
+                            <label for="targetUniversity">志望大学</label>
+                            <select id="targetUniversity" class="select-input">
+                                <option value="tokyo">東京大学</option>
+                                <option value="kyoto">京都大学</option>
+                                <option value="waseda">早稲田大学</option>
+                                <option value="keio">慶應義塾大学</option>
+                                <option value="sophia">上智大学</option>
+                                <option value="march">MARCH</option>
+                                <option value="kansai">関関同立</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label for="difficultyLevel">難易度レベル</label>
+                            <select id="difficultyLevel" class="select-input">
+                                <option value="basic">基礎レベル</option>
+                                <option value="standard">標準レベル</option>
+                                <option value="advanced">上級レベル</option>
+                                <option value="mixed">ミックス</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label for="questionsPerSession">1セッションの問題数</label>
+                            <div class="slider-container">
+                                <input type="range" id="questionsPerSession" min="5" max="20" value="10" class="slider">
+                                <span class="slider-value" id="questionsCount">10</span>問
+                            </div>
+                        </div>
+
+                        <div class="setting-group">
+                            <label for="timeLimit">制限時間（秒）</label>
+                            <div class="slider-container">
+                                <input type="range" id="timeLimit" min="3" max="10" value="5" class="slider">
+                                <span class="slider-value" id="timeLimitValue">5</span>秒
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="setting-group">
-                        <h3>難易度レベル</h3>
-                        <select id="difficultyLevel">
-                            <option value="basic">基礎レベル</option>
-                            <option value="standard">標準レベル</option>
-                            <option value="advanced">上級レベル</option>
-                        </select>
+
+                    <div class="settings-section">
+                        <h3>通知設定</h3>
+                        <div class="setting-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="dailyReminder">
+                                <span class="checkmark"></span>
+                                毎日の学習リマインダー
+                            </label>
+                        </div>
+                        <div class="setting-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="soundEffects" checked>
+                                <span class="checkmark"></span>
+                                効果音を有効にする
+                            </label>
+                        </div>
                     </div>
-                    
-                    <div class="setting-group">
-                        <h3>1セッションの問題数</h3>
-                        <input type="range" id="questionsPerSession" min="5" max="20" value="10">
-                        <span id="questionsCount">10</span>問
+
+                    <div class="settings-section">
+                        <h3>データ管理</h3>
+                        <div class="setting-actions">
+                            <button class="action-btn secondary" id="exportDataBtn">
+                                <span class="btn-icon">📤</span>
+                                データをエクスポート
+                            </button>
+                            <button class="action-btn secondary" id="importDataBtn">
+                                <span class="btn-icon">📥</span>
+                                データをインポート
+                            </button>
+                            <button class="action-btn danger" id="resetDataBtn">
+                                <span class="btn-icon">🗑️</span>
+                                データをリセット
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
+
+        <!-- Results Modal -->
+        <div id="resultsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>ドリル結果</h3>
+                    <button class="modal-close" id="closeResultsModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="results-summary">
+                        <div class="result-score">
+                            <span class="score-value" id="resultScore">0</span>
+                            <span class="score-total">/ 10</span>
+                        </div>
+                        <div class="result-details">
+                            <div class="result-item">
+                                <span class="result-label">正答率</span>
+                                <span class="result-value" id="resultAccuracy">0%</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">平均時間</span>
+                                <span class="result-value" id="resultAvgTime">0s</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">最速回答</span>
+                                <span class="result-value" id="resultFastestTime">0s</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="results-actions">
+                        <button class="action-btn primary" id="continueStudyBtn">学習を続ける</button>
+                        <button class="action-btn secondary" id="reviewMistakesBtn">間違いを復習</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="toast-container"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

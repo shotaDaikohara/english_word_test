@@ -1,5 +1,5 @@
-// 英単語学習ドリルアプリ
-class VocabularyDrillApp {
+// VocabMaster - Professional English Vocabulary Learning Platform
+class VocabMaster {
     constructor() {
         this.currentScreen = 'home';
         this.currentQuestion = 0;
@@ -10,103 +10,106 @@ class VocabularyDrillApp {
         this.performanceChart = null;
         this.speedChart = null;
         this.wordAnalysisChart = null;
+        this.wordDatabase = [];
+        this.streakCount = 0;
         this.settings = {
             targetUniversity: 'tokyo',
             difficultyLevel: 'standard',
-            questionsPerSession: 10
+            questionsPerSession: 10,
+            timeLimit: 5,
+            dailyReminder: false,
+            soundEffects: true
         };
         
-        // ローカルストレージからデータを読み込み
-        this.loadData();
-        
-        // イベントリスナーを設定
+        this.init();
+    }
+
+    async init() {
+        this.showLoadingScreen();
+        await this.loadWordDatabase();
+        this.loadUserData();
         this.setupEventListeners();
-        
-        // 初期画面を表示
-        this.showScreen('home');
         this.updateDashboard();
+        this.hideLoadingScreen();
+        this.showScreen('home');
+        this.showToast('VocabMasterへようこそ！', 'success');
     }
 
-    // 大学受験レベルの英単語データベース
-    getWordDatabase() {
+    showLoadingScreen() {
+        document.getElementById('loadingScreen').style.display = 'flex';
+    }
+
+    hideLoadingScreen() {
+        const loadingScreen = document.getElementById('loadingScreen');
+        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 300);
+    }
+
+    async loadWordDatabase() {
+        try {
+            const response = await fetch('words.csv');
+            const csvText = await response.text();
+            this.wordDatabase = this.parseCSV(csvText);
+        } catch (error) {
+            console.error('Failed to load word database:', error);
+            this.showToast('単語データの読み込みに失敗しました', 'error');
+            // Fallback to embedded data
+            this.wordDatabase = this.getFallbackWords();
+        }
+    }
+
+    parseCSV(csvText) {
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',');
+        const words = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            if (values.length >= 6) {
+                words.push({
+                    word: values[0],
+                    meaning: values[1],
+                    level: values[2],
+                    frequency: values[3],
+                    category: values[4],
+                    example: values[5].replace(/"/g, '')
+                });
+            }
+        }
+        return words;
+    }
+
+    getFallbackWords() {
         return [
-            // 基礎レベル
-            { word: "abandon", meaning: "捨てる、放棄する", level: "basic", frequency: "high" },
-            { word: "ability", meaning: "能力", level: "basic", frequency: "high" },
-            { word: "absence", meaning: "不在、欠席", level: "basic", frequency: "high" },
-            { word: "absolute", meaning: "絶対の", level: "basic", frequency: "high" },
-            { word: "absorb", meaning: "吸収する", level: "basic", frequency: "high" },
-            
-            // 標準レベル
-            { word: "accelerate", meaning: "加速する", level: "standard", frequency: "medium" },
-            { word: "accommodate", meaning: "収容する、適応させる", level: "standard", frequency: "medium" },
-            { word: "accomplish", meaning: "達成する", level: "standard", frequency: "medium" },
-            { word: "accumulate", meaning: "蓄積する", level: "standard", frequency: "medium" },
-            { word: "acknowledge", meaning: "認める", level: "standard", frequency: "medium" },
-            
-            // 上級レベル
-            { word: "ambiguous", meaning: "曖昧な", level: "advanced", frequency: "low" },
-            { word: "arbitrary", meaning: "任意の、恣意的な", level: "advanced", frequency: "low" },
-            { word: "articulate", meaning: "明確に表現する", level: "advanced", frequency: "low" },
-            { word: "authentic", meaning: "本物の", level: "advanced", frequency: "low" },
-            { word: "autonomous", meaning: "自律的な", level: "advanced", frequency: "low" },
-            
-            // 追加の単語
-            { word: "benefit", meaning: "利益、恩恵", level: "basic", frequency: "high" },
-            { word: "challenge", meaning: "挑戦", level: "basic", frequency: "high" },
-            { word: "contribute", meaning: "貢献する", level: "standard", frequency: "medium" },
-            { word: "demonstrate", meaning: "実証する", level: "standard", frequency: "medium" },
-            { word: "elaborate", meaning: "詳しく説明する", level: "advanced", frequency: "low" }
+            { word: "abandon", meaning: "捨てる・放棄する", level: "basic", frequency: "high", category: "verb", example: "He had to abandon his car." },
+            { word: "ability", meaning: "能力", level: "basic", frequency: "high", category: "noun", example: "She has great ability." }
         ];
-    }
+    } 
+   setupEventListeners() {
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const screen = e.currentTarget.dataset.screen;
+                this.showScreen(screen);
+            });
+        });
 
-    // 大学別の合格基準データ
-    getUniversityData() {
-        return {
-            tokyo: { name: "東京大学", requiredAccuracy: 90, requiredSpeed: 3 },
-            kyoto: { name: "京都大学", requiredAccuracy: 88, requiredSpeed: 3.5 },
-            waseda: { name: "早稲田大学", requiredAccuracy: 85, requiredSpeed: 4 },
-            keio: { name: "慶應義塾大学", requiredAccuracy: 85, requiredSpeed: 4 },
-            sophia: { name: "上智大学", requiredAccuracy: 82, requiredSpeed: 4.5 }
-        };
-    }
-
-    // イベントリスナーの設定
-    setupEventListeners() {
-        // ナビゲーション
-        document.getElementById('homeBtn').addEventListener('click', () => this.showScreen('home'));
-        document.getElementById('drillBtn').addEventListener('click', () => this.showScreen('drill'));
-        document.getElementById('analysisBtn').addEventListener('click', () => this.showScreen('analysis'));
-        document.getElementById('settingsBtn').addEventListener('click', () => this.showScreen('settings'));
-
-        // ホーム画面のボタン
+        // Home screen actions
         document.getElementById('startDrillBtn').addEventListener('click', () => this.startDrill());
         document.getElementById('weakPointBtn').addEventListener('click', () => this.startWeakPointDrill());
         document.getElementById('reviewBtn').addEventListener('click', () => this.startReview());
 
-        // ドリル画面のボタン
+        // Drill screen
+        document.getElementById('backToHomeBtn').addEventListener('click', () => this.showScreen('home'));
         document.getElementById('skipBtn').addEventListener('click', () => this.skipQuestion());
         document.getElementById('hintBtn').addEventListener('click', () => this.showHint());
 
-        // 設定画面
-        document.getElementById('targetUniversity').addEventListener('change', (e) => {
-            this.settings.targetUniversity = e.target.value;
-            this.saveData();
-            this.updateDashboard();
-        });
+        // Settings
+        this.setupSettingsListeners();
 
-        document.getElementById('difficultyLevel').addEventListener('change', (e) => {
-            this.settings.difficultyLevel = e.target.value;
-            this.saveData();
-        });
-
-        document.getElementById('questionsPerSession').addEventListener('input', (e) => {
-            this.settings.questionsPerSession = parseInt(e.target.value);
-            document.getElementById('questionsCount').textContent = e.target.value;
-            this.saveData();
-        });
-
-        // 分析画面のタブ
+        // Analysis tabs
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabName = e.target.dataset.tab;
@@ -114,39 +117,61 @@ class VocabularyDrillApp {
             });
         });
 
-        // 単語別分析の検索とソート
-        document.addEventListener('input', (e) => {
-            if (e.target.id === 'wordSearchInput') {
-                this.updateWordAnalysis();
-            }
-        });
+        // Word analysis controls
+        document.getElementById('wordSearchInput')?.addEventListener('input', () => this.updateWordAnalysis());
+        document.getElementById('chartTypeSelect')?.addEventListener('change', () => this.updateWordAnalysis());
+        document.getElementById('levelFilter')?.addEventListener('change', () => this.updateWordAnalysis());
 
-        document.addEventListener('change', (e) => {
-            if (e.target.id === 'chartTypeSelect' || e.target.id === 'levelFilter') {
-                this.updateWordAnalysis();
-            }
+        // Modal controls
+        document.getElementById('closeResultsModal')?.addEventListener('click', () => this.hideModal('resultsModal'));
+        document.getElementById('continueStudyBtn')?.addEventListener('click', () => {
+            this.hideModal('resultsModal');
+            this.startDrill();
+        });
+        document.getElementById('reviewMistakesBtn')?.addEventListener('click', () => {
+            this.hideModal('resultsModal');
+            this.startReview();
         });
     }
 
-    // 画面切り替え
+    setupSettingsListeners() {
+        const settings = ['targetUniversity', 'difficultyLevel', 'questionsPerSession', 'timeLimit', 'dailyReminder', 'soundEffects'];
+        
+        settings.forEach(setting => {
+            const element = document.getElementById(setting);
+            if (element) {
+                const eventType = element.type === 'range' ? 'input' : 'change';
+                element.addEventListener(eventType, (e) => {
+                    const value = e.target.type === 'checkbox' ? e.target.checked : 
+                                  e.target.type === 'range' ? parseInt(e.target.value) : e.target.value;
+                    this.settings[setting] = value;
+                    this.saveUserData();
+                    this.updateSettingsDisplay();
+                    if (setting === 'targetUniversity') {
+                        this.updateDashboard();
+                    }
+                });
+            }
+        });
+
+        // Data management buttons
+        document.getElementById('exportDataBtn')?.addEventListener('click', () => this.exportData());
+        document.getElementById('importDataBtn')?.addEventListener('click', () => this.importData());
+        document.getElementById('resetDataBtn')?.addEventListener('click', () => this.resetData());
+    }
+
     showScreen(screenName) {
-        // 全ての画面を非表示
-        document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
-        });
+        // Update navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-screen="${screenName}"]`)?.classList.add('active');
 
-        // ナビゲーションボタンの状態更新
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-
-        // 指定された画面を表示
-        document.getElementById(screenName + 'Screen').classList.add('active');
-        document.getElementById(screenName + 'Btn').classList.add('active');
+        // Update screens
+        document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+        document.getElementById(screenName + 'Screen')?.classList.add('active');
 
         this.currentScreen = screenName;
 
-        // 画面固有の初期化処理
+        // Screen-specific initialization
         if (screenName === 'analysis') {
             this.initializeAnalysis();
         } else if (screenName === 'settings') {
@@ -154,23 +179,28 @@ class VocabularyDrillApp {
         }
     }
 
-    // ダッシュボードの更新
     updateDashboard() {
         const stats = this.calculateStats();
         const universityData = this.getUniversityData();
         const targetUniv = universityData[this.settings.targetUniversity];
 
+        // Update stat cards
         document.getElementById('todayCount').textContent = stats.todayCount;
         document.getElementById('accuracyRate').textContent = stats.accuracyRate + '%';
         document.getElementById('avgTime').textContent = stats.avgTime + 's';
         document.getElementById('targetUniv').textContent = targetUniv.name;
 
-        // 合格可能性の計算
+        // Calculate and display pass rate
         const passRate = this.calculatePassRate(stats, targetUniv);
         document.getElementById('passRate').textContent = passRate + '%';
+
+        // Update streak counter
+        document.getElementById('streakCount').textContent = this.streakCount;
+
+        // Update progress bars
+        this.updateLevelProgress();
     }
 
-    // 統計の計算
     calculateStats() {
         const history = this.getStoredData('history') || [];
         const today = new Date().toDateString();
@@ -186,7 +216,7 @@ class VocabularyDrillApp {
             session.answers.forEach(answer => {
                 totalQuestions++;
                 if (answer.correct) totalCorrect++;
-                totalTime += answer.responseTime;
+                totalTime += answer.responseTime || 0;
             });
         });
 
@@ -197,14 +227,63 @@ class VocabularyDrillApp {
         };
     }
 
-    // 合格可能性の計算
+    getUniversityData() {
+        return {
+            tokyo: { name: "東京大学", requiredAccuracy: 90, requiredSpeed: 3 },
+            kyoto: { name: "京都大学", requiredAccuracy: 88, requiredSpeed: 3.5 },
+            waseda: { name: "早稲田大学", requiredAccuracy: 85, requiredSpeed: 4 },
+            keio: { name: "慶應義塾大学", requiredAccuracy: 85, requiredSpeed: 4 },
+            sophia: { name: "上智大学", requiredAccuracy: 82, requiredSpeed: 4.5 },
+            march: { name: "MARCH", requiredAccuracy: 80, requiredSpeed: 5 },
+            kansai: { name: "関関同立", requiredAccuracy: 78, requiredSpeed: 5.5 }
+        };
+    }
+
     calculatePassRate(stats, targetUniv) {
         const accuracyScore = Math.min(stats.accuracyRate / targetUniv.requiredAccuracy, 1) * 50;
-        const speedScore = Math.min(targetUniv.requiredSpeed / stats.avgTime, 1) * 50;
+        const speedScore = Math.min(targetUniv.requiredSpeed / Math.max(stats.avgTime, 1), 1) * 50;
         return Math.round(accuracyScore + speedScore);
     }
 
-    // ドリル開始
+    updateLevelProgress() {
+        const history = this.getStoredData('history') || [];
+        const masteredWords = this.getMasteredWords(history);
+        
+        const levels = ['basic', 'standard', 'advanced'];
+        levels.forEach(level => {
+            const totalWords = this.wordDatabase.filter(w => w.level === level).length;
+            const masteredCount = masteredWords.filter(w => w.level === level).length;
+            const percentage = totalWords > 0 ? (masteredCount / totalWords) * 100 : 0;
+            
+            const progressFill = document.getElementById(level + 'Progress');
+            const progressText = document.getElementById(level + 'ProgressText');
+            
+            if (progressFill) progressFill.style.width = percentage + '%';
+            if (progressText) progressText.textContent = `${masteredCount}/${totalWords}`;
+        });
+    }
+
+    getMasteredWords(history) {
+        const wordStats = {};
+        
+        history.forEach(session => {
+            session.answers.forEach(answer => {
+                if (!wordStats[answer.word]) {
+                    wordStats[answer.word] = { correct: 0, total: 0, level: answer.level };
+                }
+                wordStats[answer.word].total++;
+                if (answer.correct) wordStats[answer.word].correct++;
+            });
+        });
+
+        return Object.keys(wordStats)
+            .filter(word => {
+                const stats = wordStats[word];
+                return stats.total >= 3 && (stats.correct / stats.total) >= 0.8;
+            })
+            .map(word => ({ word, level: wordStats[word].level }));
+    }
+
     startDrill() {
         this.generateQuestions();
         this.currentQuestion = 0;
@@ -214,47 +293,17 @@ class VocabularyDrillApp {
         this.showQuestion();
     }
 
-    // 苦手問題ドリル開始
-    startWeakPointDrill() {
-        const weakWords = this.getWeakWords();
-        if (weakWords.length === 0) {
-            alert('苦手な単語がありません。通常のドリルを開始します。');
-            this.startDrill();
-            return;
-        }
-        
-        this.generateQuestionsFromWords(weakWords);
-        this.currentQuestion = 0;
-        this.userAnswers = [];
-        this.startTime = Date.now();
-        this.showScreen('drill');
-        this.showQuestion();
-    }
-
-    // 復習開始
-    startReview() {
-        const history = this.getStoredData('history') || [];
-        if (history.length === 0) {
-            alert('復習する履歴がありません。');
-            return;
-        }
-
-        const recentIncorrect = this.getRecentIncorrectWords();
-        this.generateQuestionsFromWords(recentIncorrect);
-        this.currentQuestion = 0;
-        this.userAnswers = [];
-        this.startTime = Date.now();
-        this.showScreen('drill');
-        this.showQuestion();
-    }
-
-    // 問題生成
     generateQuestions() {
-        const wordDb = this.getWordDatabase();
-        const filteredWords = wordDb.filter(word => 
-            word.level === this.settings.difficultyLevel || 
-            (this.settings.difficultyLevel === 'standard' && word.level === 'basic')
-        );
+        let filteredWords = [];
+        
+        if (this.settings.difficultyLevel === 'mixed') {
+            filteredWords = this.wordDatabase;
+        } else {
+            filteredWords = this.wordDatabase.filter(word => 
+                word.level === this.settings.difficultyLevel || 
+                (this.settings.difficultyLevel === 'standard' && word.level === 'basic')
+            );
+        }
 
         this.questions = [];
         const usedWords = new Set();
@@ -266,55 +315,52 @@ class VocabularyDrillApp {
             } while (usedWords.has(word.word) && usedWords.size < filteredWords.length);
 
             usedWords.add(word.word);
-
-            // 選択肢を生成
             const options = this.generateOptions(word, filteredWords);
             
             this.questions.push({
                 word: word.word,
+                meaning: word.meaning,
                 correctAnswer: word.meaning,
                 options: options,
-                level: word.level
+                level: word.level,
+                category: word.category,
+                example: word.example
             });
         }
     }
 
-    // 特定の単語から問題生成
-    generateQuestionsFromWords(words) {
-        const wordDb = this.getWordDatabase();
-        this.questions = [];
-
-        words.slice(0, this.settings.questionsPerSession).forEach(wordText => {
-            const word = wordDb.find(w => w.word === wordText);
-            if (word) {
-                const options = this.generateOptions(word, wordDb);
-                this.questions.push({
-                    word: word.word,
-                    correctAnswer: word.meaning,
-                    options: options,
-                    level: word.level
-                });
-            }
-        });
-    }
-
-    // 選択肢生成
     generateOptions(correctWord, wordDb) {
         const options = [correctWord.meaning];
-        const otherWords = wordDb.filter(w => w.word !== correctWord.word);
+        const otherWords = wordDb.filter(w => w.word !== correctWord.word && w.level === correctWord.level);
         
-        while (options.length < 4) {
+        while (options.length < 4 && otherWords.length > 0) {
             const randomWord = otherWords[Math.floor(Math.random() * otherWords.length)];
+            if (!options.includes(randomWord.meaning)) {
+                options.push(randomWord.meaning);
+            }
+            otherWords.splice(otherWords.indexOf(randomWord), 1);
+        }
+
+        // Fill remaining slots if needed
+        while (options.length < 4) {
+            const randomWord = wordDb[Math.floor(Math.random() * wordDb.length)];
             if (!options.includes(randomWord.meaning)) {
                 options.push(randomWord.meaning);
             }
         }
 
-        // シャッフル
-        return options.sort(() => Math.random() - 0.5);
+        return this.shuffleArray(options);
     }
 
-    // 問題表示
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
     showQuestion() {
         if (this.currentQuestion >= this.questions.length) {
             this.finishDrill();
@@ -324,16 +370,19 @@ class VocabularyDrillApp {
         const question = this.questions[this.currentQuestion];
         this.questionStartTime = Date.now();
 
-        // プログレスバー更新
+        // Update progress
         const progress = ((this.currentQuestion + 1) / this.questions.length) * 100;
         document.getElementById('progressFill').style.width = progress + '%';
         document.getElementById('questionNumber').textContent = 
             `${this.currentQuestion + 1}/${this.questions.length}`;
 
-        // 問題文表示
+        // Update question content
         document.getElementById('questionText').textContent = question.word;
+        document.getElementById('questionLevel').textContent = this.getLevelLabel(question.level);
+        document.getElementById('questionCategory').textContent = question.category;
+        document.getElementById('questionExample').textContent = question.example;
 
-        // 選択肢表示
+        // Generate options
         const optionsContainer = document.getElementById('optionsContainer');
         optionsContainer.innerHTML = '';
 
@@ -345,17 +394,48 @@ class VocabularyDrillApp {
             optionsContainer.appendChild(button);
         });
 
-        // タイマー開始
         this.startQuestionTimer();
     }
 
-    // 回答選択
+    startQuestionTimer() {
+        const timerElement = document.getElementById('timer');
+        const timerCircle = document.getElementById('timerCircle');
+        const startTime = Date.now();
+        let timeLeft = this.settings.timeLimit;
+
+        timerCircle.classList.remove('warning', 'danger', 'timeout', 'success');
+        timerElement.textContent = timeLeft;
+
+        const updateTimer = () => {
+            if (this.currentScreen !== 'drill') return;
+            
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            timeLeft = Math.max(0, this.settings.timeLimit - elapsed);
+            
+            timerElement.textContent = timeLeft;
+
+            timerCircle.classList.remove('warning', 'danger', 'timeout');
+            if (timeLeft <= 0) {
+                timerCircle.classList.add('timeout');
+                this.timeoutQuestion();
+                return;
+            } else if (timeLeft <= 1) {
+                timerCircle.classList.add('danger');
+            } else if (timeLeft <= 2) {
+                timerCircle.classList.add('warning');
+            }
+
+            setTimeout(updateTimer, 100);
+        };
+
+        updateTimer();
+    }
+
     selectAnswer(selectedAnswer) {
         const question = this.questions[this.currentQuestion];
         const responseTime = Date.now() - this.questionStartTime;
         const isCorrect = selectedAnswer === question.correctAnswer;
 
-        // 回答を記録
         this.userAnswers.push({
             word: question.word,
             selectedAnswer: selectedAnswer,
@@ -365,31 +445,62 @@ class VocabularyDrillApp {
             level: question.level
         });
 
-        // 選択肢の色を変更
-        const optionBtns = document.querySelectorAll('.option-btn');
-        optionBtns.forEach(btn => {
-            if (btn.textContent === question.correctAnswer) {
-                btn.classList.add('correct');
-            } else if (btn.textContent === selectedAnswer && !isCorrect) {
-                btn.classList.add('incorrect');
-            }
-            btn.disabled = true;
-        });
-
-        // タイマーを停止
-        const timerCircle = document.getElementById('timerCircle');
-        if (isCorrect && responseTime <= 5000) {
-            timerCircle.classList.add('success');
+        this.highlightAnswer(selectedAnswer, question.correctAnswer);
+        
+        if (this.settings.soundEffects) {
+            this.playSound(isCorrect ? 'correct' : 'incorrect');
         }
 
-        // 1.5秒後に次の問題へ
         setTimeout(() => {
             this.currentQuestion++;
             this.showQuestion();
         }, 1500);
     }
 
-    // 問題スキップ
+    highlightAnswer(selectedAnswer, correctAnswer) {
+        const optionBtns = document.querySelectorAll('.option-btn');
+        const timerCircle = document.getElementById('timerCircle');
+        
+        optionBtns.forEach(btn => {
+            if (btn.textContent === correctAnswer) {
+                btn.classList.add('correct');
+            } else if (btn.textContent === selectedAnswer && selectedAnswer !== correctAnswer) {
+                btn.classList.add('incorrect');
+            }
+            btn.disabled = true;
+        });
+
+        if (selectedAnswer === correctAnswer) {
+            timerCircle.classList.add('success');
+        }
+    }
+
+    timeoutQuestion() {
+        const question = this.questions[this.currentQuestion];
+        const responseTime = Date.now() - this.questionStartTime;
+
+        this.userAnswers.push({
+            word: question.word,
+            selectedAnswer: null,
+            correctAnswer: question.correctAnswer,
+            correct: false,
+            responseTime: responseTime,
+            level: question.level,
+            timeout: true
+        });
+
+        this.highlightAnswer(null, question.correctAnswer);
+        
+        if (this.settings.soundEffects) {
+            this.playSound('timeout');
+        }
+
+        setTimeout(() => {
+            this.currentQuestion++;
+            this.showQuestion();
+        }, 1500);
+    }
+
     skipQuestion() {
         const question = this.questions[this.currentQuestion];
         const responseTime = Date.now() - this.questionStartTime;
@@ -404,14 +515,7 @@ class VocabularyDrillApp {
             skipped: true
         });
 
-        // 正解を表示
-        const optionBtns = document.querySelectorAll('.option-btn');
-        optionBtns.forEach(btn => {
-            if (btn.textContent === question.correctAnswer) {
-                btn.classList.add('correct');
-            }
-            btn.disabled = true;
-        });
+        this.highlightAnswer(null, question.correctAnswer);
 
         setTimeout(() => {
             this.currentQuestion++;
@@ -419,20 +523,20 @@ class VocabularyDrillApp {
         }, 1500);
     }
 
-    // ヒント表示
     showHint() {
         const question = this.questions[this.currentQuestion];
         const hint = question.correctAnswer.charAt(0) + '...';
-        alert(`ヒント: ${hint}`);
+        this.showToast(`ヒント: ${hint}`, 'info');
     }
 
-    // ドリル終了
     finishDrill() {
         const totalTime = Date.now() - this.startTime;
         const correctCount = this.userAnswers.filter(a => a.correct).length;
         const accuracy = Math.round((correctCount / this.userAnswers.length) * 100);
+        const avgTime = Math.round(totalTime / this.userAnswers.length / 1000);
+        const fastestTime = Math.min(...this.userAnswers.map(a => a.responseTime)) / 1000;
 
-        // 結果を保存
+        // Save session
         this.saveSession({
             date: new Date().toISOString(),
             answers: this.userAnswers,
@@ -440,137 +544,95 @@ class VocabularyDrillApp {
             accuracy: accuracy
         });
 
-        // 結果表示
-        alert(`ドリル完了!\n正答率: ${accuracy}%\n正解数: ${correctCount}/${this.userAnswers.length}`);
+        // Update streak
+        this.updateStreak(accuracy);
 
-        // ホーム画面に戻る
-        this.showScreen('home');
+        // Show results modal
+        this.showResults(correctCount, accuracy, avgTime, fastestTime);
+
+        // Update dashboard
         this.updateDashboard();
     }
 
-    // 問題タイマー
-    startQuestionTimer() {
-        const timerElement = document.getElementById('timer');
-        const timerCircle = document.getElementById('timerCircle');
-        const startTime = Date.now();
-        let timeLeft = 5;
-
-        // 初期状態をリセット
-        timerCircle.classList.remove('warning', 'danger', 'timeout');
-        timerElement.textContent = timeLeft;
-
-        const updateTimer = () => {
-            if (this.currentScreen !== 'drill') return;
-            
-            const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            timeLeft = Math.max(0, 5 - elapsed);
-            
-            timerElement.textContent = timeLeft;
-
-            // 色の変更
-            timerCircle.classList.remove('warning', 'danger', 'timeout');
-            if (timeLeft <= 0) {
-                timerCircle.classList.add('timeout');
-                // 5秒経過で自動的に次の問題へ（不正解として記録）
-                if (elapsed === 5) {
-                    this.timeoutQuestion();
-                }
-            } else if (timeLeft <= 2) {
-                timerCircle.classList.add('danger');
-            } else if (timeLeft <= 3) {
-                timerCircle.classList.add('warning');
-            }
-
-            if (timeLeft > 0) {
-                setTimeout(updateTimer, 100);
-            }
-        };
-
-        updateTimer();
-    }
-
-    // タイムアウト時の処理
-    timeoutQuestion() {
-        const question = this.questions[this.currentQuestion];
-        const responseTime = Date.now() - this.questionStartTime;
-
-        // タイムアウトとして記録
-        this.userAnswers.push({
-            word: question.word,
-            selectedAnswer: null,
-            correctAnswer: question.correctAnswer,
-            correct: false,
-            responseTime: responseTime,
-            level: question.level,
-            timeout: true
-        });
-
-        // 正解を表示
-        const optionBtns = document.querySelectorAll('.option-btn');
-        optionBtns.forEach(btn => {
-            if (btn.textContent === question.correctAnswer) {
-                btn.classList.add('correct');
-            }
-            btn.disabled = true;
-        });
-
-        // 1.5秒後に次の問題へ
-        setTimeout(() => {
-            this.currentQuestion++;
-            this.showQuestion();
-        }, 1500);
-    }
-
-    // 分析画面の初期化
-    initializeAnalysis() {
-        this.showAnalysisTab('performance');
-    }
-
-    // 分析タブ表示
-    showAnalysisTab(tabName) {
-        // タブボタンの状態更新
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-        // タブパネルの表示切り替え
-        document.querySelectorAll('.tab-panel').forEach(panel => {
-            panel.classList.remove('active');
-        });
-        document.getElementById(tabName + 'Tab').classList.add('active');
-
-        // タブ固有の処理
-        if (tabName === 'performance') {
-            this.showPerformanceChart();
-        } else if (tabName === 'speed') {
-            this.showSpeedChart();
-        } else if (tabName === 'wordAnalysis') {
-            this.showWordAnalysis();
-        } else if (tabName === 'weakness') {
-            this.showWeaknessList();
+    showResults(correctCount, accuracy, avgTime, fastestTime) {
+        document.getElementById('resultScore').textContent = correctCount;
+        document.getElementById('resultAccuracy').textContent = accuracy + '%';
+        document.getElementById('resultAvgTime').textContent = avgTime + 's';
+        document.getElementById('resultFastestTime').textContent = fastestTime.toFixed(1) + 's';
+        
+        this.showModal('resultsModal');
+        
+        if (accuracy >= 80) {
+            this.showToast('素晴らしい成績です！', 'success');
+        } else if (accuracy >= 60) {
+            this.showToast('良い調子です！', 'info');
+        } else {
+            this.showToast('復習して頑張りましょう！', 'warning');
         }
     }
 
-    // 成績分析チャート表示
+    updateStreak(accuracy) {
+        if (accuracy >= 70) {
+            this.streakCount++;
+        } else {
+            this.streakCount = 0;
+        }
+        this.saveUserData();
+    }
+
+    // Analysis methods
+    initializeAnalysis() {
+        this.showAnalysisTab('performance');
+        this.updateAnalysisSummary();
+    }
+
+    updateAnalysisSummary() {
+        const history = this.getStoredData('history') || [];
+        const totalTime = history.reduce((sum, session) => sum + (session.totalTime || 0), 0);
+        const masteredWords = this.getMasteredWords(history);
+
+        document.getElementById('totalStudyTime').textContent = Math.round(totalTime / 60000) + '分';
+        document.getElementById('masteredWords').textContent = masteredWords.length + '語';
+    }
+
+    showAnalysisTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
+
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        document.getElementById(tabName + 'Tab')?.classList.add('active');
+
+        switch (tabName) {
+            case 'performance':
+                this.showPerformanceChart();
+                break;
+            case 'speed':
+                this.showSpeedChart();
+                break;
+            case 'wordAnalysis':
+                this.updateWordAnalysis();
+                break;
+            case 'weakness':
+                this.showWeaknessList();
+                break;
+        }
+    }
+
     showPerformanceChart() {
-        const ctx = document.getElementById('performanceChart').getContext('2d');
+        const ctx = document.getElementById('performanceChart')?.getContext('2d');
+        if (!ctx) return;
+
         const history = this.getStoredData('history') || [];
         
-        // 既存のチャートを破棄
         if (this.performanceChart) {
             this.performanceChart.destroy();
         }
 
         if (history.length === 0) {
-            ctx.fillStyle = '#666';
-            ctx.font = '16px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('学習データがありません', ctx.canvas.width / 2, ctx.canvas.height / 2);
+            this.showNoDataMessage(ctx, '学習データがありません');
             return;
         }
 
-        // 最新10セッションのデータを取得
         const recentSessions = history.slice(-10);
         const labels = recentSessions.map((_, index) => `セッション${index + 1}`);
         const accuracyData = recentSessions.map(session => session.accuracy);
@@ -582,72 +644,71 @@ class VocabularyDrillApp {
                 datasets: [{
                     label: '正答率 (%)',
                     data: accuracyData,
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    borderWidth: 2,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    borderWidth: 3,
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '学習成績の推移',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
                         max: 100,
-                        title: {
-                            display: true,
-                            text: '正答率 (%)'
-                        }
+                        grid: { color: '#f3f4f6' },
+                        ticks: { font: { size: 12 } }
                     },
                     x: {
-                        title: {
-                            display: true,
-                            text: 'セッション'
-                        }
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: '学習成績の推移'
+                        grid: { color: '#f3f4f6' },
+                        ticks: { font: { size: 12 } }
                     }
                 }
             }
         });
     }
 
-    // 速度分析チャート表示
     showSpeedChart() {
-        const ctx = document.getElementById('speedChart').getContext('2d');
+        const ctx = document.getElementById('speedChart')?.getContext('2d');
+        if (!ctx) return;
+
         const history = this.getStoredData('history') || [];
         
-        // 既存のチャートを破棄
         if (this.speedChart) {
             this.speedChart.destroy();
         }
 
         if (history.length === 0) {
-            ctx.fillStyle = '#666';
-            ctx.font = '16px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('学習データがありません', ctx.canvas.width / 2, ctx.canvas.height / 2);
+            this.showNoDataMessage(ctx, '学習データがありません');
             return;
         }
 
-        // 単語レベル別の平均回答時間を計算
         const levelStats = { basic: [], standard: [], advanced: [] };
         
         history.forEach(session => {
             session.answers.forEach(answer => {
-                if (answer.level && answer.responseTime) {
-                    levelStats[answer.level].push(answer.responseTime / 1000); // ミリ秒を秒に変換
+                if (answer.level && answer.responseTime && !answer.timeout) {
+                    levelStats[answer.level].push(answer.responseTime / 1000);
                 }
             });
         });
 
-        // 各レベルの平均時間を計算
         const avgTimes = {};
         Object.keys(levelStats).forEach(level => {
             if (levelStats[level].length > 0) {
@@ -657,63 +718,391 @@ class VocabularyDrillApp {
             }
         });
 
-        // 最新5セッションの回答時間推移
-        const recentSessions = history.slice(-5);
-        const sessionLabels = recentSessions.map((_, index) => `セッション${index + 1}`);
-        const sessionAvgTimes = recentSessions.map(session => {
-            const totalTime = session.answers.reduce((sum, answer) => sum + answer.responseTime, 0);
-            return totalTime / session.answers.length / 1000; // 秒に変換
-        });
-
         this.speedChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['基礎レベル', '標準レベル', '上級レベル', ...sessionLabels],
+                labels: ['基礎レベル', '標準レベル', '上級レベル'],
                 datasets: [{
-                    label: 'レベル別平均時間',
+                    label: '平均回答時間 (秒)',
                     data: [avgTimes.basic, avgTimes.standard, avgTimes.advanced],
-                    backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c'],
-                    borderColor: ['#27ae60', '#e67e22', '#c0392b'],
-                    borderWidth: 1
-                }, {
-                    label: 'セッション別平均時間',
-                    data: [null, null, null, ...sessionAvgTimes],
-                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
-                    borderColor: '#3498db',
-                    borderWidth: 1
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderColor: ['#059669', '#d97706', '#dc2626'],
+                    borderWidth: 2,
+                    borderRadius: 8
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: '平均回答時間 (秒)'
-                        }
-                    }
-                },
                 plugins: {
                     title: {
                         display: true,
-                        text: '回答速度分析'
+                        text: 'レベル別平均回答時間',
+                        font: { size: 16, weight: 'bold' }
                     },
                     legend: {
-                        display: true
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f3f4f6' },
+                        ticks: { font: { size: 12 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 12 } }
                     }
                 }
             }
         });
     }
 
-    // 単語別分析表示
-    showWordAnalysis() {
-        this.updateWordAnalysis();
+    showNoDataMessage(ctx, message) {
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '16px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText(message, ctx.canvas.width / 2, ctx.canvas.height / 2);
     }
 
-    // 単語別分析の更新
+    // Utility methods
+    getLevelLabel(level) {
+        const labels = {
+            basic: '基礎',
+            standard: '標準',
+            advanced: '上級',
+            unknown: '不明'
+        };
+        return labels[level] || '不明';
+    }
+
+    playSound(type) {
+        // Simple sound feedback using Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        const frequencies = {
+            correct: 800,
+            incorrect: 300,
+            timeout: 200
+        };
+
+        oscillator.frequency.setValueAtTime(frequencies[type] || 400, audioContext.currentTime);
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+    }
+
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+
+        const container = document.getElementById('toastContainer');
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    // Data management
+    loadUserData() {
+        const savedSettings = this.getStoredData('settings');
+        if (savedSettings) {
+            this.settings = { ...this.settings, ...savedSettings };
+        }
+        
+        this.streakCount = this.getStoredData('streakCount') || 0;
+    }
+
+    saveUserData() {
+        this.setStoredData('settings', this.settings);
+        this.setStoredData('streakCount', this.streakCount);
+    }
+
+    saveSession(sessionData) {
+        const history = this.getStoredData('history') || [];
+        history.push(sessionData);
+        
+        if (history.length > 100) {
+            history.splice(0, history.length - 100);
+        }
+        
+        this.setStoredData('history', history);
+    }
+
+    getStoredData(key) {
+        try {
+            const data = localStorage.getItem('vocabMaster_' + key);
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            console.error('Failed to load data:', e);
+            return null;
+        }
+    }
+
+    setStoredData(key, data) {
+        try {
+            localStorage.setItem('vocabMaster_' + key, JSON.stringify(data));
+        } catch (e) {
+            console.error('Failed to save data:', e);
+        }
+    }
+
+    // Settings management
+    initializeSettings() {
+        Object.keys(this.settings).forEach(key => {
+            const element = document.getElementById(key);
+            if (element) {
+                if (element.type === 'checkbox') {
+                    element.checked = this.settings[key];
+                } else {
+                    element.value = this.settings[key];
+                }
+            }
+        });
+        this.updateSettingsDisplay();
+    }
+
+    updateSettingsDisplay() {
+        const questionsCount = document.getElementById('questionsCount');
+        const timeLimitValue = document.getElementById('timeLimitValue');
+        
+        if (questionsCount) questionsCount.textContent = this.settings.questionsPerSession;
+        if (timeLimitValue) timeLimitValue.textContent = this.settings.timeLimit;
+    }
+
+    exportData() {
+        const data = {
+            settings: this.settings,
+            history: this.getStoredData('history') || [],
+            streakCount: this.streakCount,
+            exportDate: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vocabmaster_data_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        this.showToast('データをエクスポートしました', 'success');
+    }
+
+    importData() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.settings) this.settings = data.settings;
+                        if (data.history) this.setStoredData('history', data.history);
+                        if (data.streakCount) this.streakCount = data.streakCount;
+                        
+                        this.saveUserData();
+                        this.updateDashboard();
+                        this.initializeSettings();
+                        this.showToast('データをインポートしました', 'success');
+                    } catch (error) {
+                        this.showToast('データの読み込みに失敗しました', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    }
+
+    resetData() {
+        if (confirm('すべてのデータをリセットしますか？この操作は取り消せません。')) {
+            localStorage.clear();
+            this.streakCount = 0;
+            this.settings = {
+                targetUniversity: 'tokyo',
+                difficultyLevel: 'standard',
+                questionsPerSession: 10,
+                timeLimit: 5,
+                dailyReminder: false,
+                soundEffects: true
+            };
+            this.saveUserData();
+            this.updateDashboard();
+            this.initializeSettings();
+            this.showToast('データをリセットしました', 'info');
+        }
+    }
+
+    // Additional drill methods
+    startWeakPointDrill() {
+        const weakWords = this.getWeakWords();
+        if (weakWords.length === 0) {
+            this.showToast('苦手な単語がありません。通常のドリルを開始します。', 'info');
+            this.startDrill();
+            return;
+        }
+        
+        this.generateQuestionsFromWords(weakWords);
+        this.currentQuestion = 0;
+        this.userAnswers = [];
+        this.startTime = Date.now();
+        this.showScreen('drill');
+        this.showQuestion();
+    }
+
+    startReview() {
+        const history = this.getStoredData('history') || [];
+        if (history.length === 0) {
+            this.showToast('復習する履歴がありません。', 'warning');
+            return;
+        }
+
+        const recentIncorrect = this.getRecentIncorrectWords();
+        if (recentIncorrect.length === 0) {
+            this.showToast('復習する単語がありません。', 'info');
+            return;
+        }
+
+        this.generateQuestionsFromWords(recentIncorrect);
+        this.currentQuestion = 0;
+        this.userAnswers = [];
+        this.startTime = Date.now();
+        this.showScreen('drill');
+        this.showQuestion();
+    }
+
+    generateQuestionsFromWords(words) {
+        this.questions = [];
+        const wordObjects = words.slice(0, this.settings.questionsPerSession).map(wordText => {
+            return this.wordDatabase.find(w => w.word === wordText) || {
+                word: wordText,
+                meaning: '意味不明',
+                level: 'unknown',
+                category: 'unknown',
+                example: ''
+            };
+        });
+
+        wordObjects.forEach(word => {
+            const options = this.generateOptions(word, this.wordDatabase);
+            this.questions.push({
+                word: word.word,
+                meaning: word.meaning,
+                correctAnswer: word.meaning,
+                options: options,
+                level: word.level,
+                category: word.category,
+                example: word.example
+            });
+        });
+    }
+
+    getWeakWords() {
+        const history = this.getStoredData('history') || [];
+        const wordStats = {};
+
+        let totalResponseTime = 0;
+        let totalResponses = 0;
+
+        history.forEach(session => {
+            session.answers.forEach(answer => {
+                if (answer.responseTime && !answer.skipped && !answer.timeout) {
+                    totalResponseTime += answer.responseTime;
+                    totalResponses++;
+                }
+            });
+        });
+
+        const avgResponseTime = totalResponses > 0 ? totalResponseTime / totalResponses : 5000;
+
+        history.forEach(session => {
+            session.answers.forEach(answer => {
+                if (!wordStats[answer.word]) {
+                    wordStats[answer.word] = { 
+                        correct: 0, 
+                        total: 0, 
+                        totalTime: 0,
+                        responses: 0
+                    };
+                }
+                wordStats[answer.word].total++;
+                if (answer.correct) {
+                    wordStats[answer.word].correct++;
+                }
+                if (answer.responseTime && !answer.skipped && !answer.timeout) {
+                    wordStats[answer.word].totalTime += answer.responseTime;
+                    wordStats[answer.word].responses++;
+                }
+            });
+        });
+
+        return Object.keys(wordStats)
+            .filter(word => {
+                const stats = wordStats[word];
+                const accuracyRate = stats.correct / stats.total;
+                const avgWordTime = stats.responses > 0 ? stats.totalTime / stats.responses : 0;
+                
+                return stats.total >= 2 && (
+                    accuracyRate < 0.6 || 
+                    (avgWordTime > avgResponseTime * 1.5 && stats.responses >= 2)
+                );
+            })
+            .sort((a, b) => {
+                const aStats = wordStats[a];
+                const bStats = wordStats[b];
+                const aRate = aStats.correct / aStats.total;
+                const bRate = bStats.correct / bStats.total;
+                return aRate - bRate;
+            });
+    }
+
+    getRecentIncorrectWords() {
+        const history = this.getStoredData('history') || [];
+        const recentSessions = history.slice(-5);
+        const incorrectWords = [];
+
+        recentSessions.forEach(session => {
+            session.answers.forEach(answer => {
+                if (!answer.correct && !incorrectWords.includes(answer.word)) {
+                    incorrectWords.push(answer.word);
+                }
+            });
+        });
+
+        return incorrectWords;
+    }
+
+    // Word analysis methods
     updateWordAnalysis() {
         const allData = this.getWordAnalysisData();
         const filteredData = this.filterWordAnalysisData(allData);
@@ -721,7 +1110,50 @@ class VocabularyDrillApp {
         this.renderWordAnalysisList(filteredData);
     }
 
-    // 単語別分析データのフィルタリング
+    getWordAnalysisData() {
+        const history = this.getStoredData('history') || [];
+        const wordStats = {};
+
+        const wordMeaningMap = {};
+        this.wordDatabase.forEach(word => {
+            wordMeaningMap[word.word] = word.meaning;
+        });
+
+        history.forEach(session => {
+            session.answers.forEach(answer => {
+                if (!wordStats[answer.word]) {
+                    wordStats[answer.word] = {
+                        word: answer.word,
+                        meaning: wordMeaningMap[answer.word] || '不明',
+                        correct: 0,
+                        total: 0,
+                        totalTime: 0,
+                        responses: 0,
+                        level: answer.level || 'unknown'
+                    };
+                }
+                
+                wordStats[answer.word].total++;
+                if (answer.correct) {
+                    wordStats[answer.word].correct++;
+                }
+                if (answer.responseTime && !answer.skipped && !answer.timeout) {
+                    wordStats[answer.word].totalTime += answer.responseTime;
+                    wordStats[answer.word].responses++;
+                }
+            });
+        });
+
+        return Object.values(wordStats)
+            .filter(stats => stats.total > 0)
+            .map(stats => ({
+                ...stats,
+                accuracy: Math.round((stats.correct / stats.total) * 100),
+                avgTime: stats.responses > 0 ? Math.round(stats.totalTime / stats.responses / 1000) : 0,
+                attempts: stats.total
+            }));
+    }
+
     filterWordAnalysisData(data) {
         const searchTerm = document.getElementById('wordSearchInput')?.value.toLowerCase() || '';
         const levelFilter = document.getElementById('levelFilter')?.value || 'all';
@@ -734,21 +1166,18 @@ class VocabularyDrillApp {
         });
     }
 
-    // 単語別分析チャート表示
     showWordAnalysisChart(data) {
-        const ctx = document.getElementById('wordAnalysisChart').getContext('2d');
+        const ctx = document.getElementById('wordAnalysisChart')?.getContext('2d');
+        if (!ctx) return;
+
         const chartType = document.getElementById('chartTypeSelect')?.value || 'scatter';
 
-        // 既存のチャートを破棄
         if (this.wordAnalysisChart) {
             this.wordAnalysisChart.destroy();
         }
 
         if (data.length === 0) {
-            ctx.fillStyle = '#666';
-            ctx.font = '16px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('表示するデータがありません', ctx.canvas.width / 2, ctx.canvas.height / 2);
+            this.showNoDataMessage(ctx, '表示するデータがありません');
             return;
         }
 
@@ -765,7 +1194,6 @@ class VocabularyDrillApp {
         }
     }
 
-    // 散布図の作成
     createScatterChart(ctx, data) {
         const datasets = this.groupDataByLevel(data).map(group => ({
             label: this.getLevelLabel(group.level),
@@ -788,25 +1216,22 @@ class VocabularyDrillApp {
                 maintainAspectRatio: false,
                 scales: {
                     x: {
-                        title: {
-                            display: true,
-                            text: '平均回答時間 (秒)'
-                        },
-                        beginAtZero: true
+                        title: { display: true, text: '平均回答時間 (秒)' },
+                        beginAtZero: true,
+                        grid: { color: '#f3f4f6' }
                     },
                     y: {
-                        title: {
-                            display: true,
-                            text: '正答率 (%)'
-                        },
+                        title: { display: true, text: '正答率 (%)' },
                         beginAtZero: true,
-                        max: 100
+                        max: 100,
+                        grid: { color: '#f3f4f6' }
                     }
                 },
                 plugins: {
                     title: {
                         display: true,
-                        text: '単語別分析：正答率 vs 回答時間'
+                        text: '単語別分析：正答率 vs 回答時間',
+                        font: { size: 16, weight: 'bold' }
                     },
                     tooltip: {
                         callbacks: {
@@ -822,9 +1247,8 @@ class VocabularyDrillApp {
         });
     }
 
-    // 棒グラフの作成
     createBarChart(ctx, data) {
-        const sortedData = [...data].sort((a, b) => a.accuracy - b.accuracy);
+        const sortedData = [...data].sort((a, b) => a.accuracy - b.accuracy).slice(0, 20);
         const labels = sortedData.map(item => item.word);
         const accuracyData = sortedData.map(item => item.accuracy);
         const colors = sortedData.map(item => this.getLevelColor(item.level));
@@ -838,7 +1262,8 @@ class VocabularyDrillApp {
                     data: accuracyData,
                     backgroundColor: colors,
                     borderColor: colors,
-                    borderWidth: 1
+                    borderWidth: 1,
+                    borderRadius: 4
                 }]
             },
             options: {
@@ -848,39 +1273,31 @@ class VocabularyDrillApp {
                     y: {
                         beginAtZero: true,
                         max: 100,
-                        title: {
-                            display: true,
-                            text: '正答率 (%)'
-                        }
+                        grid: { color: '#f3f4f6' }
                     },
                     x: {
-                        title: {
-                            display: true,
-                            text: '単語'
-                        }
+                        grid: { display: false }
                     }
                 },
                 plugins: {
                     title: {
                         display: true,
-                        text: '単語別正答率（低い順）'
+                        text: '単語別正答率（低い順・上位20語）',
+                        font: { size: 16, weight: 'bold' }
                     },
-                    legend: {
-                        display: false
-                    }
+                    legend: { display: false }
                 }
             }
         });
     }
 
-    // バブルチャートの作成
     createBubbleChart(ctx, data) {
         const datasets = this.groupDataByLevel(data).map(group => ({
             label: this.getLevelLabel(group.level),
             data: group.data.map(item => ({
                 x: item.avgTime,
                 y: item.accuracy,
-                r: Math.max(5, Math.min(20, item.attempts * 2)), // 出題回数に応じてバブルサイズ調整
+                r: Math.max(5, Math.min(20, item.attempts * 2)),
                 word: item.word,
                 attempts: item.attempts
             })),
@@ -897,25 +1314,22 @@ class VocabularyDrillApp {
                 maintainAspectRatio: false,
                 scales: {
                     x: {
-                        title: {
-                            display: true,
-                            text: '平均回答時間 (秒)'
-                        },
-                        beginAtZero: true
+                        title: { display: true, text: '平均回答時間 (秒)' },
+                        beginAtZero: true,
+                        grid: { color: '#f3f4f6' }
                     },
                     y: {
-                        title: {
-                            display: true,
-                            text: '正答率 (%)'
-                        },
+                        title: { display: true, text: '正答率 (%)' },
                         beginAtZero: true,
-                        max: 100
+                        max: 100,
+                        grid: { color: '#f3f4f6' }
                     }
                 },
                 plugins: {
                     title: {
                         display: true,
-                        text: '単語別分析：正答率 vs 回答時間 (バブルサイズ = 出題回数)'
+                        text: '単語別分析：正答率 vs 回答時間 (バブルサイズ = 出題回数)',
+                        font: { size: 16, weight: 'bold' }
                     },
                     tooltip: {
                         callbacks: {
@@ -932,7 +1346,6 @@ class VocabularyDrillApp {
         });
     }
 
-    // レベル別にデータをグループ化
     groupDataByLevel(data) {
         const groups = {};
         data.forEach(item => {
@@ -948,27 +1361,25 @@ class VocabularyDrillApp {
         }));
     }
 
-    // レベル別の色を取得
     getLevelColor(level, alpha = 1) {
         const colors = {
-            basic: `rgba(46, 204, 113, ${alpha})`,    // 緑
-            standard: `rgba(243, 156, 18, ${alpha})`, // オレンジ
-            advanced: `rgba(231, 76, 60, ${alpha})`,  // 赤
-            unknown: `rgba(149, 165, 166, ${alpha})`  // グレー
+            basic: `rgba(16, 185, 129, ${alpha})`,
+            standard: `rgba(245, 158, 11, ${alpha})`,
+            advanced: `rgba(239, 68, 68, ${alpha})`,
+            unknown: `rgba(107, 114, 128, ${alpha})`
         };
         return colors[level] || colors.unknown;
     }
 
-    // 単語別分析リスト表示（簡略版）
     renderWordAnalysisList(data) {
         const container = document.getElementById('wordAnalysisList');
+        if (!container) return;
 
         if (data.length === 0) {
             container.innerHTML = '<p class="no-data">表示するデータがありません。</p>';
             return;
         }
 
-        // 上位10件のみ表示
         const topWords = [...data]
             .sort((a, b) => a.accuracy - b.accuracy)
             .slice(0, 10);
@@ -987,166 +1398,24 @@ class VocabularyDrillApp {
         `;
     }
 
-    // 単語別分析データの取得
-    getWordAnalysisData() {
-        const history = this.getStoredData('history') || [];
-        const wordStats = {};
-        const wordDb = this.getWordDatabase();
-
-        // 単語データベースから意味を取得するためのマップを作成
-        const wordMeaningMap = {};
-        wordDb.forEach(word => {
-            wordMeaningMap[word.word] = word.meaning;
-        });
-
-        history.forEach(session => {
-            session.answers.forEach(answer => {
-                if (!wordStats[answer.word]) {
-                    wordStats[answer.word] = {
-                        word: answer.word,
-                        meaning: wordMeaningMap[answer.word] || '不明',
-                        correct: 0,
-                        total: 0,
-                        totalTime: 0,
-                        responses: 0,
-                        level: answer.level || 'unknown'
-                    };
-                }
-                
-                wordStats[answer.word].total++;
-                if (answer.correct) {
-                    wordStats[answer.word].correct++;
-                }
-                if (answer.responseTime && !answer.skipped) {
-                    wordStats[answer.word].totalTime += answer.responseTime;
-                    wordStats[answer.word].responses++;
-                }
-            });
-        });
-
-        return Object.values(wordStats)
-            .filter(stats => stats.total > 0)
-            .map(stats => ({
-                ...stats,
-                accuracy: Math.round((stats.correct / stats.total) * 100),
-                avgTime: stats.responses > 0 ? Math.round(stats.totalTime / stats.responses / 1000) : 0,
-                attempts: stats.total
-            }));
-    }
-
-    // 単語別分析の描画
-    renderWordAnalysis() {
-        const container = document.getElementById('wordAnalysisList');
-        const data = this.currentWordAnalysisData || [];
-
-        if (data.length === 0) {
-            container.innerHTML = '<p class="no-data">学習データがありません。</p>';
-            return;
-        }
-
-        container.innerHTML = data.map(wordData => `
-            <div class="word-analysis-item" data-level="${wordData.level}">
-                <div class="word-header">
-                    <div class="word-main">
-                        <span class="word-text">${wordData.word}</span>
-                        <span class="word-meaning">${wordData.meaning}</span>
-                    </div>
-                    <div class="word-level level-${wordData.level}">${this.getLevelLabel(wordData.level)}</div>
-                </div>
-                <div class="word-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">正答率</span>
-                        <span class="stat-value accuracy-${this.getAccuracyClass(wordData.accuracy)}">${wordData.accuracy}%</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">平均時間</span>
-                        <span class="stat-value">${wordData.avgTime}s</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">出題回数</span>
-                        <span class="stat-value">${wordData.attempts}回</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">正解数</span>
-                        <span class="stat-value">${wordData.correct}/${wordData.total}</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // レベルラベルの取得
-    getLevelLabel(level) {
-        const labels = {
-            basic: '基礎',
-            standard: '標準',
-            advanced: '上級',
-            unknown: '不明'
-        };
-        return labels[level] || '不明';
-    }
-
-    // 正答率に基づくクラス名の取得
     getAccuracyClass(accuracy) {
         if (accuracy >= 80) return 'high';
         if (accuracy >= 60) return 'medium';
         return 'low';
     }
 
-    // 単語分析のフィルタリング
-    filterWordAnalysis() {
-        const searchTerm = document.getElementById('wordSearchInput').value.toLowerCase();
-        const allData = this.getWordAnalysisData();
-        
-        this.currentWordAnalysisData = allData.filter(wordData => 
-            wordData.word.toLowerCase().includes(searchTerm) ||
-            wordData.meaning.toLowerCase().includes(searchTerm)
-        );
-        
-        this.sortWordAnalysis();
-    }
-
-    // 単語分析のソート
-    sortWordAnalysis() {
-        const sortBy = document.getElementById('sortSelect').value;
-        
-        if (!this.currentWordAnalysisData) {
-            this.currentWordAnalysisData = this.getWordAnalysisData();
-        }
-
-        this.currentWordAnalysisData.sort((a, b) => {
-            switch (sortBy) {
-                case 'accuracy':
-                    return a.accuracy - b.accuracy; // 正答率の低い順
-                case 'speed':
-                    return b.avgTime - a.avgTime; // 回答時間の長い順
-                case 'frequency':
-                    return b.attempts - a.attempts; // 出題回数の多い順
-                case 'alphabetical':
-                    return a.word.localeCompare(b.word); // アルファベット順
-                default:
-                    return 0;
-            }
-        });
-
-        this.renderWordAnalysis();
-    }
-
-    // 苦手単語リスト表示
     showWeaknessList() {
         const weakWords = this.getDetailedWeakWords();
         const container = document.getElementById('weaknessList');
-        container.innerHTML = '';
+        if (!container) return;
 
         if (weakWords.length === 0) {
-            container.innerHTML = '<p>苦手な単語はありません。</p>';
+            container.innerHTML = '<p class="no-data">苦手な単語はありません。</p>';
             return;
         }
 
-        weakWords.forEach(wordData => {
-            const item = document.createElement('div');
-            item.className = 'weakness-item';
-            item.innerHTML = `
+        container.innerHTML = weakWords.map(wordData => `
+            <div class="weakness-item">
                 <div class="weakness-word">${wordData.word}</div>
                 <div class="weakness-stats">
                     正答率: ${wordData.accuracy}% | 
@@ -1154,101 +1423,20 @@ class VocabularyDrillApp {
                     出題回数: ${wordData.attempts}回 | 
                     苦手理由: ${wordData.reason}
                 </div>
-            `;
-            container.appendChild(item);
-        });
+            </div>
+        `).join('');
     }
 
-    // 設定画面の初期化
-    initializeSettings() {
-        document.getElementById('targetUniversity').value = this.settings.targetUniversity;
-        document.getElementById('difficultyLevel').value = this.settings.difficultyLevel;
-        document.getElementById('questionsPerSession').value = this.settings.questionsPerSession;
-        document.getElementById('questionsCount').textContent = this.settings.questionsPerSession;
-    }
-
-    // 苦手単語の取得（正答率と回答時間を考慮）
-    getWeakWords() {
-        const history = this.getStoredData('history') || [];
-        const wordStats = {};
-
-        // 全体の平均回答時間を計算
-        let totalResponseTime = 0;
-        let totalResponses = 0;
-
-        history.forEach(session => {
-            session.answers.forEach(answer => {
-                if (answer.responseTime && !answer.skipped) {
-                    totalResponseTime += answer.responseTime;
-                    totalResponses++;
-                }
-            });
-        });
-
-        const avgResponseTime = totalResponses > 0 ? totalResponseTime / totalResponses : 5000;
-
-        // 単語ごとの統計を計算
-        history.forEach(session => {
-            session.answers.forEach(answer => {
-                if (!wordStats[answer.word]) {
-                    wordStats[answer.word] = { 
-                        correct: 0, 
-                        total: 0, 
-                        totalTime: 0,
-                        responses: 0
-                    };
-                }
-                wordStats[answer.word].total++;
-                if (answer.correct) {
-                    wordStats[answer.word].correct++;
-                }
-                if (answer.responseTime && !answer.skipped) {
-                    wordStats[answer.word].totalTime += answer.responseTime;
-                    wordStats[answer.word].responses++;
-                }
-            });
-        });
-
-        return Object.keys(wordStats)
-            .filter(word => {
-                const stats = wordStats[word];
-                const accuracyRate = stats.correct / stats.total;
-                const avgWordTime = stats.responses > 0 ? stats.totalTime / stats.responses : 0;
-                
-                // 苦手条件：正答率60%未満 OR 平均回答時間が全体平均の1.5倍以上
-                return stats.total >= 2 && (
-                    accuracyRate < 0.6 || 
-                    (avgWordTime > avgResponseTime * 1.5 && stats.responses >= 2)
-                );
-            })
-            .sort((a, b) => {
-                const aStats = wordStats[a];
-                const bStats = wordStats[b];
-                const aRate = aStats.correct / aStats.total;
-                const bRate = bStats.correct / bStats.total;
-                const aTime = aStats.responses > 0 ? aStats.totalTime / aStats.responses : 0;
-                const bTime = bStats.responses > 0 ? bStats.totalTime / bStats.responses : 0;
-                
-                // 正答率が低い順、同じなら回答時間が長い順
-                if (Math.abs(aRate - bRate) < 0.1) {
-                    return bTime - aTime;
-                }
-                return aRate - bRate;
-            });
-    }
-
-    // 詳細な苦手単語データの取得
     getDetailedWeakWords() {
         const history = this.getStoredData('history') || [];
         const wordStats = {};
 
-        // 全体の平均回答時間を計算
         let totalResponseTime = 0;
         let totalResponses = 0;
 
         history.forEach(session => {
             session.answers.forEach(answer => {
-                if (answer.responseTime && !answer.skipped) {
+                if (answer.responseTime && !answer.skipped && !answer.timeout) {
                     totalResponseTime += answer.responseTime;
                     totalResponses++;
                 }
@@ -1269,7 +1457,7 @@ class VocabularyDrillApp {
                 }
                 wordStats[answer.word].total++;
                 wordStats[answer.word].totalTime += answer.responseTime || 0;
-                if (answer.responseTime && !answer.skipped) {
+                if (answer.responseTime && !answer.skipped && !answer.timeout) {
                     wordStats[answer.word].responses++;
                 }
                 if (answer.correct) {
@@ -1284,7 +1472,6 @@ class VocabularyDrillApp {
                 const accuracyRate = stats.correct / stats.total;
                 const avgWordTime = stats.responses > 0 ? stats.totalTime / stats.responses : 0;
                 
-                // 苦手条件：正答率70%未満 OR 平均回答時間が全体平均の1.3倍以上
                 return stats.total >= 2 && (
                     accuracyRate < 0.7 || 
                     (avgWordTime > avgResponseTime * 1.3 && stats.responses >= 2)
@@ -1304,79 +1491,15 @@ class VocabularyDrillApp {
                 };
             })
             .sort((a, b) => {
-                // 正答率が低い順、同じなら回答時間が長い順
                 if (Math.abs(a.accuracy - b.accuracy) < 5) {
                     return b.avgTime - a.avgTime;
                 }
                 return a.accuracy - b.accuracy;
             });
     }
-
-    // 最近の間違った単語の取得
-    getRecentIncorrectWords() {
-        const history = this.getStoredData('history') || [];
-        const recentSessions = history.slice(-5); // 最近5セッション
-        const incorrectWords = [];
-
-        recentSessions.forEach(session => {
-            session.answers.forEach(answer => {
-                if (!answer.correct && !incorrectWords.includes(answer.word)) {
-                    incorrectWords.push(answer.word);
-                }
-            });
-        });
-
-        return incorrectWords;
-    }
-
-    // セッション保存
-    saveSession(sessionData) {
-        const history = this.getStoredData('history') || [];
-        history.push(sessionData);
-        
-        // 最新100セッションのみ保持
-        if (history.length > 100) {
-            history.splice(0, history.length - 100);
-        }
-        
-        this.setStoredData('history', history);
-    }
-
-    // データの読み込み
-    loadData() {
-        const savedSettings = this.getStoredData('settings');
-        if (savedSettings) {
-            this.settings = { ...this.settings, ...savedSettings };
-        }
-    }
-
-    // データの保存
-    saveData() {
-        this.setStoredData('settings', this.settings);
-    }
-
-    // ローカルストレージからデータ取得
-    getStoredData(key) {
-        try {
-            const data = localStorage.getItem('vocabularyDrill_' + key);
-            return data ? JSON.parse(data) : null;
-        } catch (e) {
-            console.error('データの読み込みに失敗しました:', e);
-            return null;
-        }
-    }
-
-    // ローカルストレージにデータ保存
-    setStoredData(key, data) {
-        try {
-            localStorage.setItem('vocabularyDrill_' + key, JSON.stringify(data));
-        } catch (e) {
-            console.error('データの保存に失敗しました:', e);
-        }
-    }
 }
 
-// アプリケーション初期化
+// Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    new VocabularyDrillApp();
+    new VocabMaster();
 });
