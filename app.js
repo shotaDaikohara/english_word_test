@@ -245,6 +245,10 @@ class VocabMaster {
 
         const history = this.getStoredData('history') || [];
         const masteredWords = this.getMasteredWords(history);
+        
+        // クリア単語が0の場合は0%を返す
+        if (masteredWords.length === 0) return 0;
+        
         const masteredWordSet = new Set(masteredWords.map(w => w.word));
 
         let totalWeight = 0;
@@ -294,7 +298,9 @@ class VocabMaster {
         return Object.keys(wordStats)
             .filter(word => {
                 const stats = wordStats[word];
-                return stats.total >= 3 && (stats.correct / stats.total) >= 0.8;
+                // 条件を緩和：2回以上出題で70%以上正答、または3回以上出題で80%以上正答
+                return (stats.total >= 2 && (stats.correct / stats.total) >= 0.7) ||
+                       (stats.total >= 3 && (stats.correct / stats.total) >= 0.8);
             })
             .map(word => ({ word, level: wordStats[word].level }));
     }
