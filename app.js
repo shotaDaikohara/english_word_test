@@ -1,19 +1,17 @@
-// VocabMaster - Professional English Vocabulary Learning Platform
+// VocabMaster - 英単語学習アプリ
 class VocabMaster {
     constructor() {
+        // 基本プロパティ
         this.currentScreen = 'home';
         this.currentQuestion = 0;
         this.questions = [];
         this.userAnswers = [];
         this.startTime = null;
         this.questionStartTime = null;
-        this.performanceChart = null;
-        this.speedChart = null;
-        this.wordAnalysisChart = null;
-        this.wordDatabase = [];
-        this.universityWords = {};
-        this.streakCount = 0;
         this.timerInterval = null;
+        this.streakCount = 0;
+        
+        // 設定
         this.settings = {
             targetUniversity: 'tokyo',
             difficultyLevel: 'standard',
@@ -22,60 +20,97 @@ class VocabMaster {
             dailyReminder: false,
             soundEffects: true
         };
-    }
 
-    // 初期化メソッドを外部から呼び出し可能にする
+        // 単語データ
+        this.wordDatabase = [
+            { word: "abandon", meaning: "捨てる・放棄する", level: "basic", category: "verb", example: "He had to abandon his car." },
+            { word: "ability", meaning: "能力", level: "basic", category: "noun", example: "She has great ability." },
+            { word: "absence", meaning: "不在・欠席", level: "basic", category: "noun", example: "His absence was noticed." },
+            { word: "absolute", meaning: "絶対の", level: "basic", category: "adjective", example: "There was absolute silence." },
+            { word: "absorb", meaning: "吸収する", level: "basic", category: "verb", example: "Plants absorb water." },
+            { word: "abstract", meaning: "抽象的な", level: "standard", category: "adjective", example: "The concept is abstract." },
+            { word: "academic", meaning: "学術の", level: "standard", category: "adjective", example: "He pursued academic career." },
+            { word: "accelerate", meaning: "加速する", level: "standard", category: "verb", example: "The car accelerated." },
+            { word: "accept", meaning: "受け入れる", level: "basic", category: "verb", example: "I accept your apology." },
+            { word: "access", meaning: "接近・アクセス", level: "standard", category: "noun", example: "Students have access to library." },
+            { word: "accomplish", meaning: "達成する", level: "standard", category: "verb", example: "She accomplished her goal." },
+            { word: "account", meaning: "説明・口座", level: "basic", category: "noun", example: "Give an account of events." },
+            { word: "accurate", meaning: "正確な", level: "standard", category: "adjective", example: "The forecast was accurate." },
+            { word: "achieve", meaning: "達成する", level: "basic", category: "verb", example: "He achieved his dreams." },
+            { word: "acknowledge", meaning: "認める", level: "standard", category: "verb", example: "She acknowledged her mistake." },
+            { word: "acquire", meaning: "獲得する", level: "standard", category: "verb", example: "He acquired new skills." },
+            { word: "adapt", meaning: "適応する", level: "standard", category: "verb", example: "Animals adapt to environment." },
+            { word: "adequate", meaning: "適切な", level: "standard", category: "adjective", example: "Salary is adequate." },
+            { word: "adjust", meaning: "調整する", level: "standard", category: "verb", example: "Please adjust temperature." },
+            { word: "admit", meaning: "認める", level: "basic", category: "verb", example: "He admitted his guilt." },
+            { word: "adopt", meaning: "採用する", level: "standard", category: "verb", example: "They adopted a child." },
+            { word: "adult", meaning: "大人", level: "basic", category: "noun", example: "Every adult should vote." },
+            { word: "advance", meaning: "前進・進歩", level: "basic", category: "verb", example: "Technology advances." },
+            { word: "advantage", meaning: "利点", level: "basic", category: "noun", example: "What's the advantage?" },
+            { word: "adventure", meaning: "冒険", level: "basic", category: "noun", example: "They went on adventure." },
+            { word: "affect", meaning: "影響を与える", level: "standard", category: "verb", example: "Rain affects picnic." },
+            { word: "afford", meaning: "余裕がある", level: "basic", category: "verb", example: "I can't afford new car." },
+            { word: "agent", meaning: "代理人", level: "standard", category: "noun", example: "Real estate agent helped." }
+        ];
+
+        // 大学別単語データ
+        this.universityWords = {
+            tokyo: [
+                { word: "abandon", importance: 5 },
+                { word: "ability", importance: 5 },
+                { word: "abstract", importance: 5 },
+                { word: "academic", importance: 5 },
+                { word: "accomplish", importance: 4 },
+                { word: "accurate", importance: 5 },
+                { word: "achieve", importance: 5 },
+                { word: "acknowledge", importance: 4 },
+                { word: "acquire", importance: 5 },
+                { word: "affect", importance: 5 }
+            ],
+            waseda: [
+                { word: "abandon", importance: 4 },
+                { word: "ability", importance: 5 },
+                { word: "academic", importance: 5 },
+                { word: "accomplish", importance: 4 },
+                { word: "accurate", importance: 4 },
+                { word: "achieve", importance: 5 },
+                { word: "acquire", importance: 4 },
+                { word: "adapt", importance: 3 },
+                { word: "advance", importance: 4 },
+                { word: "advantage", importance: 5 }
+            ]
+        };
+    }    
+// 初期化メソッド
     async initialize() {
-        await this.init();
-    }
-
-    async init() {
         try {
             this.showLoadingScreen();
-            
-            const loadingTimeout = setTimeout(() => {
-                console.warn('Loading timeout, forcing app to start');
-                this.hideLoadingScreen();
-                this.showScreen('home');
-                this.showToast('読み込みに時間がかかりました', 'warning');
-            }, 5000);
-            
-            await this.loadWordDatabase();
             this.loadUserData();
             this.setupEventListeners();
             this.updateDashboard();
             
-            clearTimeout(loadingTimeout);
-            
-            this.hideLoadingScreen();
-            this.showScreen('home');
-            this.showToast('VocabMasterへようこそ！', 'success');
+            setTimeout(() => {
+                this.hideLoadingScreen();
+                this.showScreen('home');
+                this.showToast('VocabMasterへようこそ！', 'success');
+            }, 1000);
         } catch (error) {
             console.error('Initialization error:', error);
-            // フォールバック: エラーが発生してもアプリを開始
-            try {
-                this.hideLoadingScreen();
-            } catch (e) {
-                // ローディング画面の非表示に失敗した場合
-                const loadingScreen = document.getElementById('loadingScreen');
-                if (loadingScreen) {
-                    loadingScreen.style.display = 'none';
-                }
-            }
+            this.hideLoadingScreen();
             this.showScreen('home');
             this.showToast('初期化エラーが発生しました', 'error');
         }
     }
 
+    // ローディング画面表示
     showLoadingScreen() {
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) {
             loadingScreen.style.display = 'flex';
-        } else {
-            console.warn('Loading screen element not found');
         }
     }
 
+    // ローディング画面非表示
     hideLoadingScreen() {
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) {
@@ -83,153 +118,12 @@ class VocabMaster {
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
             }, 300);
-        } else {
-            console.warn('Loading screen element not found');
         }
     }
 
-    async loadWordDatabase() {
-        try {
-            console.log('Loading word database...');
-            
-            this.wordDatabase = this.getEmbeddedWords();
-            this.universityWords = this.getEmbeddedUniversityWords();
-            
-            console.log(`Final word count: ${this.wordDatabase.length} words`);
-            console.log(`University data loaded for: ${Object.keys(this.universityWords).join(', ')}`);
-
-        } catch (error) {
-            console.error('Critical error loading word database:', error);
-            this.showToast('データ読み込みエラー、デフォルトデータを使用します', 'warning');
-            this.wordDatabase = this.getEmbeddedWords();
-            this.universityWords = this.getEmbeddedUniversityWords();
-        }
-    }
-
-    getEmbeddedWords() {
-        return [
-            { word: "abandon", meaning: "捨てる・放棄する", level: "basic", frequency: "high", category: "verb", example: "He had to abandon his car." },
-            { word: "ability", meaning: "能力", level: "basic", frequency: "high", category: "noun", example: "She has great ability." },
-            { word: "absence", meaning: "不在・欠席", level: "basic", frequency: "high", category: "noun", example: "His absence was noticed." },
-            { word: "absolute", meaning: "絶対の", level: "basic", frequency: "high", category: "adjective", example: "There was absolute silence." },
-            { word: "absorb", meaning: "吸収する", level: "basic", frequency: "high", category: "verb", example: "Plants absorb water." },
-            { word: "abstract", meaning: "抽象的な", level: "standard", frequency: "medium", category: "adjective", example: "The concept is abstract." },
-            { word: "academic", meaning: "学術の", level: "standard", frequency: "medium", category: "adjective", example: "He pursued academic career." },
-            { word: "accelerate", meaning: "加速する", level: "standard", frequency: "medium", category: "verb", example: "The car accelerated." },
-            { word: "accept", meaning: "受け入れる", level: "basic", frequency: "high", category: "verb", example: "I accept your apology." },
-            { word: "access", meaning: "接近・アクセス", level: "standard", frequency: "medium", category: "noun", example: "Students have access to library." },
-            { word: "accommodate", meaning: "収容する", level: "standard", frequency: "medium", category: "verb", example: "Hotel accommodates 200 guests." },
-            { word: "accompany", meaning: "同行する", level: "standard", frequency: "medium", category: "verb", example: "Music accompanies dance." },
-            { word: "accomplish", meaning: "達成する", level: "standard", frequency: "medium", category: "verb", example: "She accomplished her goal." },
-            { word: "account", meaning: "説明・口座", level: "basic", frequency: "high", category: "noun", example: "Give an account of events." },
-            { word: "accurate", meaning: "正確な", level: "standard", frequency: "medium", category: "adjective", example: "The forecast was accurate." },
-            { word: "achieve", meaning: "達成する", level: "basic", frequency: "high", category: "verb", example: "He achieved his dreams." },
-            { word: "acknowledge", meaning: "認める", level: "standard", frequency: "medium", category: "verb", example: "She acknowledged her mistake." },
-            { word: "acquire", meaning: "獲得する", level: "standard", frequency: "medium", category: "verb", example: "He acquired new skills." },
-            { word: "adapt", meaning: "適応する", level: "standard", frequency: "medium", category: "verb", example: "Animals adapt to environment." },
-            { word: "adequate", meaning: "適切な", level: "standard", frequency: "medium", category: "adjective", example: "Salary is adequate." },
-            { word: "adjust", meaning: "調整する", level: "standard", frequency: "medium", category: "verb", example: "Please adjust temperature." },
-            { word: "admit", meaning: "認める", level: "basic", frequency: "high", category: "verb", example: "He admitted his guilt." },
-            { word: "adopt", meaning: "採用する", level: "standard", frequency: "medium", category: "verb", example: "They adopted a child." },
-            { word: "adult", meaning: "大人", level: "basic", frequency: "high", category: "noun", example: "Every adult should vote." },
-            { word: "advance", meaning: "前進・進歩", level: "basic", frequency: "high", category: "verb", example: "Technology advances." },
-            { word: "advantage", meaning: "利点", level: "basic", frequency: "high", category: "noun", example: "What's the advantage?" },
-            { word: "adventure", meaning: "冒険", level: "basic", frequency: "high", category: "noun", example: "They went on adventure." },
-            { word: "affect", meaning: "影響を与える", level: "standard", frequency: "medium", category: "verb", example: "Rain affects picnic." },
-            { word: "afford", meaning: "余裕がある", level: "basic", frequency: "high", category: "verb", example: "I can't afford new car." },
-            { word: "agent", meaning: "代理人", level: "standard", frequency: "medium", category: "noun", example: "Real estate agent helped." }
-        ];
-    } 
-   getEmbeddedUniversityWords() {
-        return {
-            tokyo: [
-                { word: "abandon", frequency: "high", importance: 5 },
-                { word: "ability", frequency: "high", importance: 5 },
-                { word: "abstract", frequency: "high", importance: 5 },
-                { word: "academic", frequency: "high", importance: 5 },
-                { word: "accomplish", frequency: "high", importance: 4 },
-                { word: "accurate", frequency: "high", importance: 5 },
-                { word: "achieve", frequency: "high", importance: 5 },
-                { word: "acknowledge", frequency: "high", importance: 4 },
-                { word: "acquire", frequency: "high", importance: 5 },
-                { word: "affect", frequency: "high", importance: 5 }
-            ],
-            kyoto: [
-                { word: "abandon", frequency: "high", importance: 5 },
-                { word: "ability", frequency: "high", importance: 5 },
-                { word: "abstract", frequency: "medium", importance: 4 },
-                { word: "academic", frequency: "high", importance: 5 },
-                { word: "accomplish", frequency: "high", importance: 4 },
-                { word: "accurate", frequency: "high", importance: 5 },
-                { word: "achieve", frequency: "high", importance: 5 },
-                { word: "acknowledge", frequency: "medium", importance: 4 },
-                { word: "acquire", frequency: "high", importance: 4 },
-                { word: "affect", frequency: "high", importance: 5 }
-            ],
-            waseda: [
-                { word: "abandon", frequency: "medium", importance: 4 },
-                { word: "ability", frequency: "high", importance: 5 },
-                { word: "academic", frequency: "high", importance: 5 },
-                { word: "accomplish", frequency: "high", importance: 4 },
-                { word: "accurate", frequency: "high", importance: 4 },
-                { word: "achieve", frequency: "high", importance: 5 },
-                { word: "acquire", frequency: "medium", importance: 4 },
-                { word: "adapt", frequency: "medium", importance: 3 },
-                { word: "advance", frequency: "high", importance: 4 },
-                { word: "advantage", frequency: "high", importance: 5 }
-            ],
-            keio: [
-                { word: "abandon", frequency: "medium", importance: 4 },
-                { word: "ability", frequency: "high", importance: 5 },
-                { word: "academic", frequency: "high", importance: 5 },
-                { word: "accomplish", frequency: "high", importance: 4 },
-                { word: "accurate", frequency: "high", importance: 4 },
-                { word: "achieve", frequency: "high", importance: 5 },
-                { word: "acquire", frequency: "medium", importance: 4 },
-                { word: "adapt", frequency: "medium", importance: 3 },
-                { word: "advance", frequency: "high", importance: 4 },
-                { word: "advantage", frequency: "high", importance: 5 }
-            ],
-            sophia: [
-                { word: "ability", frequency: "high", importance: 5 },
-                { word: "academic", frequency: "high", importance: 4 },
-                { word: "accomplish", frequency: "medium", importance: 4 },
-                { word: "accurate", frequency: "medium", importance: 4 },
-                { word: "achieve", frequency: "high", importance: 5 },
-                { word: "acquire", frequency: "medium", importance: 3 },
-                { word: "adult", frequency: "high", importance: 5 },
-                { word: "advance", frequency: "medium", importance: 4 },
-                { word: "advantage", frequency: "high", importance: 4 },
-                { word: "affect", frequency: "medium", importance: 4 }
-            ],
-            march: [
-                { word: "ability", frequency: "high", importance: 4 },
-                { word: "academic", frequency: "medium", importance: 4 },
-                { word: "accomplish", frequency: "medium", importance: 3 },
-                { word: "accurate", frequency: "medium", importance: 3 },
-                { word: "achieve", frequency: "high", importance: 4 },
-                { word: "adult", frequency: "high", importance: 4 },
-                { word: "advance", frequency: "medium", importance: 3 },
-                { word: "advantage", frequency: "high", importance: 4 },
-                { word: "affect", frequency: "medium", importance: 3 },
-                { word: "afford", frequency: "high", importance: 4 }
-            ],
-            kansai: [
-                { word: "ability", frequency: "high", importance: 4 },
-                { word: "academic", frequency: "medium", importance: 3 },
-                { word: "accomplish", frequency: "medium", importance: 3 },
-                { word: "accurate", frequency: "medium", importance: 3 },
-                { word: "achieve", frequency: "high", importance: 4 },
-                { word: "adult", frequency: "high", importance: 4 },
-                { word: "advance", frequency: "medium", importance: 3 },
-                { word: "advantage", frequency: "medium", importance: 3 },
-                { word: "affect", frequency: "medium", importance: 3 },
-                { word: "afford", frequency: "medium", importance: 3 }
-            ]
-        };
-    }    se
-tupEventListeners() {
-        // Bottom Navigation
+    // イベントリスナー設定
+    setupEventListeners() {
+        // ナビゲーション
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const screen = e.currentTarget.dataset.screen;
@@ -237,87 +131,117 @@ tupEventListeners() {
             });
         });
 
-        // Home screen actions
-        document.getElementById('startDrillBtn').addEventListener('click', () => this.startDrill());
-        document.getElementById('weakPointBtn').addEventListener('click', () => this.startWeakPointDrill());
-        document.getElementById('reviewBtn').addEventListener('click', () => this.startReview());
-
-        // Drill screen
-        document.getElementById('backToHomeBtn').addEventListener('click', () => this.showScreen('home'));
-        document.getElementById('skipBtn').addEventListener('click', () => this.skipQuestion());
-        document.getElementById('hintBtn').addEventListener('click', () => this.showHint());
-    }
-
-    showScreen(screenName) {
-        if (screenName !== 'drill') {
-            this.stopTimer();
+        // ホーム画面のボタン
+        const startBtn = document.getElementById('startDrillBtn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.startDrill());
         }
-        
-        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`[data-screen="${screenName}"]`)?.classList.add('active');
 
+        const weakBtn = document.getElementById('weakPointBtn');
+        if (weakBtn) {
+            weakBtn.addEventListener('click', () => this.startDrill());
+        }
+
+        const reviewBtn = document.getElementById('reviewBtn');
+        if (reviewBtn) {
+            reviewBtn.addEventListener('click', () => this.startDrill());
+        }
+
+        // ドリル画面のボタン
+        const backBtn = document.getElementById('backToHomeBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => this.showScreen('home'));
+        }
+
+        const skipBtn = document.getElementById('skipBtn');
+        if (skipBtn) {
+            skipBtn.addEventListener('click', () => this.skipQuestion());
+        }
+
+        const hintBtn = document.getElementById('hintBtn');
+        if (hintBtn) {
+            hintBtn.addEventListener('click', () => this.showHint());
+        }
+    } 
+   // 画面切り替え
+    showScreen(screenName) {
+        this.stopTimer();
+        
+        // ナビゲーション更新
+        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.querySelector(`[data-screen="${screenName}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+
+        // 画面切り替え
         document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-        document.getElementById(screenName + 'Screen')?.classList.add('active');
+        const targetScreen = document.getElementById(screenName + 'Screen');
+        if (targetScreen) {
+            targetScreen.classList.add('active');
+        }
 
         this.currentScreen = screenName;
     }
 
-    updateDashboard() {
-        const stats = this.calculateStats();
-        const universityData = this.getUniversityData();
-        const targetUniv = universityData[this.settings.targetUniversity];
-
-        document.getElementById('todayCount').textContent = stats.todayCount;
-        document.getElementById('accuracyRate').textContent = stats.accuracyRate + '%';
-        
-        document.getElementById('targetUniv').textContent = targetUniv.name;
-        const coverageRate = Math.round(this.calculateWordCoverageRate());
-        document.getElementById('passRate').textContent = coverageRate + '%';
-
-        document.getElementById('streakCount').textContent = this.streakCount;
+    // タイマー停止
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
     }
 
+    // ダッシュボード更新
+    updateDashboard() {
+        const stats = this.calculateStats();
+        
+        // 統計更新
+        const todayElement = document.getElementById('todayCount');
+        if (todayElement) todayElement.textContent = stats.todayCount;
+
+        const accuracyElement = document.getElementById('accuracyRate');
+        if (accuracyElement) accuracyElement.textContent = stats.accuracyRate + '%';
+
+        const coverageElement = document.getElementById('passRate');
+        if (coverageElement) coverageElement.textContent = this.calculateCoverageRate() + '%';
+
+        const streakElement = document.getElementById('streakCount');
+        if (streakElement) streakElement.textContent = this.streakCount;
+
+        const univElement = document.getElementById('targetUniv');
+        if (univElement) univElement.textContent = this.getUniversityName();
+    }
+
+    // 統計計算
     calculateStats() {
         const history = this.getStoredData('history') || [];
         const today = new Date().toDateString();
         
         const todayHistory = history.filter(h => new Date(h.date).toDateString() === today);
-        const allHistory = history;
-
+        
         let totalCorrect = 0;
         let totalQuestions = 0;
 
-        allHistory.forEach(session => {
-            session.answers.forEach(answer => {
-                totalQuestions++;
-                if (answer.correct) totalCorrect++;
-            });
+        history.forEach(session => {
+            if (session.answers) {
+                session.answers.forEach(answer => {
+                    totalQuestions++;
+                    if (answer.correct) totalCorrect++;
+                });
+            }
         });
 
         return {
-            todayCount: todayHistory.reduce((sum, session) => sum + session.answers.length, 0),
+            todayCount: todayHistory.reduce((sum, session) => sum + (session.answers ? session.answers.length : 0), 0),
             accuracyRate: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0
         };
-    }    g
-etUniversityData() {
-        return {
-            tokyo: { name: "東京大学", requiredCoverage: 90 },
-            kyoto: { name: "京都大学", requiredCoverage: 85 },
-            waseda: { name: "早稲田大学", requiredCoverage: 80 },
-            keio: { name: "慶應義塾大学", requiredCoverage: 80 },
-            sophia: { name: "上智大学", requiredCoverage: 75 },
-            march: { name: "MARCH", requiredCoverage: 70 },
-            kansai: { name: "関関同立", requiredCoverage: 65 }
-        };
     }
 
-    calculateWordCoverageRate() {
-        return this.calculateCoverageRate(this.settings.targetUniversity);
-    }
-
-    calculateCoverageRate(university) {
-        const universityWordList = this.universityWords[university];
-        if (!universityWordList) return 0;
+    // カバー率計算
+    calculateCoverageRate() {
+        const universityWordList = this.universityWords[this.settings.targetUniversity] || [];
+        if (universityWordList.length === 0) return 0;
 
         const history = this.getStoredData('history') || [];
         const masteredWords = this.getMasteredWords(history);
@@ -335,20 +259,36 @@ etUniversityData() {
             }
         });
 
-        return totalWeight > 0 ? (masteredWeight / totalWeight) * 100 : 0;
+        return totalWeight > 0 ? Math.round((masteredWeight / totalWeight) * 100) : 0;
     }
 
+    // 大学名取得
+    getUniversityName() {
+        const universities = {
+            tokyo: "東京大学",
+            kyoto: "京都大学", 
+            waseda: "早稲田大学",
+            keio: "慶應義塾大学",
+            sophia: "上智大学",
+            march: "MARCH",
+            kansai: "関関同立"
+        };
+        return universities[this.settings.targetUniversity] || "志望大学";
+    }   
+ // マスター単語取得
     getMasteredWords(history) {
         const wordStats = {};
         
         history.forEach(session => {
-            session.answers.forEach(answer => {
-                if (!wordStats[answer.word]) {
-                    wordStats[answer.word] = { correct: 0, total: 0, level: answer.level };
-                }
-                wordStats[answer.word].total++;
-                if (answer.correct) wordStats[answer.word].correct++;
-            });
+            if (session.answers) {
+                session.answers.forEach(answer => {
+                    if (!wordStats[answer.word]) {
+                        wordStats[answer.word] = { correct: 0, total: 0, level: answer.level };
+                    }
+                    wordStats[answer.word].total++;
+                    if (answer.correct) wordStats[answer.word].correct++;
+                });
+            }
         });
 
         return Object.keys(wordStats)
@@ -359,6 +299,7 @@ etUniversityData() {
             .map(word => ({ word, level: wordStats[word].level }));
     }
 
+    // ドリル開始
     startDrill() {
         this.generateQuestions();
         this.currentQuestion = 0;
@@ -366,17 +307,17 @@ etUniversityData() {
         this.startTime = Date.now();
         this.showScreen('drill');
         this.showQuestion();
-    } 
-   generateQuestions() {
-        let filteredWords = [];
-        
-        if (this.settings.difficultyLevel === 'mixed') {
+    }
+
+    // 問題生成
+    generateQuestions() {
+        let filteredWords = this.wordDatabase.filter(word => 
+            word.level === this.settings.difficultyLevel || 
+            (this.settings.difficultyLevel === 'standard' && word.level === 'basic')
+        );
+
+        if (filteredWords.length === 0) {
             filteredWords = this.wordDatabase;
-        } else {
-            filteredWords = this.wordDatabase.filter(word => 
-                word.level === this.settings.difficultyLevel || 
-                (this.settings.difficultyLevel === 'standard' && word.level === 'basic')
-            );
         }
 
         this.questions = [];
@@ -403,37 +344,24 @@ etUniversityData() {
         }
     }
 
+    // 選択肢生成
     generateOptions(correctWord, wordDb) {
         const options = [correctWord.meaning];
-        const otherWords = wordDb.filter(w => w.word !== correctWord.word && w.level === correctWord.level);
+        const otherWords = wordDb.filter(w => w.word !== correctWord.word);
         
         while (options.length < 4 && otherWords.length > 0) {
             const randomWord = otherWords[Math.floor(Math.random() * otherWords.length)];
             if (!options.includes(randomWord.meaning)) {
                 options.push(randomWord.meaning);
             }
-            otherWords.splice(otherWords.indexOf(randomWord), 1);
         }
 
-        while (options.length < 4) {
-            const randomWord = wordDb[Math.floor(Math.random() * wordDb.length)];
-            if (!options.includes(randomWord.meaning)) {
-                options.push(randomWord.meaning);
-            }
-        }
-
-        return this.shuffleArray(options);
+        // シャッフル
+        return options.sort(() => Math.random() - 0.5);
     }
 
-    shuffleArray(array) {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-    } 
-   showQuestion() {
+    // 問題表示
+    showQuestion() {
         if (this.currentQuestion >= this.questions.length) {
             this.finishDrill();
             return;
@@ -442,49 +370,73 @@ etUniversityData() {
         const question = this.questions[this.currentQuestion];
         this.questionStartTime = Date.now();
 
+        // プログレス更新
         const progress = ((this.currentQuestion + 1) / this.questions.length) * 100;
-        document.getElementById('progressFill').style.width = progress + '%';
-        document.getElementById('questionNumber').textContent = 
-            `${this.currentQuestion + 1}/${this.questions.length}`;
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) {
+            progressFill.style.width = progress + '%';
+        }
 
-        document.getElementById('questionText').textContent = question.word;
-        document.getElementById('questionLevel').textContent = this.getLevelLabel(question.level);
-        document.getElementById('questionCategory').textContent = question.category;
-        document.getElementById('questionExample').textContent = question.example;
+        const questionNumber = document.getElementById('questionNumber');
+        if (questionNumber) {
+            questionNumber.textContent = `${this.currentQuestion + 1}/${this.questions.length}`;
+        }
 
+        // 問題内容更新
+        const questionText = document.getElementById('questionText');
+        if (questionText) {
+            questionText.textContent = question.word;
+        }
+
+        const questionLevel = document.getElementById('questionLevel');
+        if (questionLevel) {
+            questionLevel.textContent = this.getLevelLabel(question.level);
+        }
+
+        const questionCategory = document.getElementById('questionCategory');
+        if (questionCategory) {
+            questionCategory.textContent = question.category;
+        }
+
+        const questionExample = document.getElementById('questionExample');
+        if (questionExample) {
+            questionExample.textContent = question.example;
+        }
+
+        // 選択肢表示
         const optionsContainer = document.getElementById('optionsContainer');
-        optionsContainer.innerHTML = '';
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
 
-        question.options.forEach((option, index) => {
-            const button = document.createElement('button');
-            button.className = 'option-btn';
-            button.textContent = option;
-            button.addEventListener('click', () => this.selectAnswer(option));
-            optionsContainer.appendChild(button);
-        });
+            question.options.forEach((option) => {
+                const button = document.createElement('button');
+                button.className = 'option-btn';
+                button.textContent = option;
+                button.addEventListener('click', () => this.selectAnswer(option));
+                optionsContainer.appendChild(button);
+            });
+        }
 
         this.startQuestionTimer();
-    }
-
+    } 
+   // タイマー開始
     startQuestionTimer() {
         const timerElement = document.getElementById('timer');
         const timerCircle = document.getElementById('timerCircle');
+        
+        if (!timerElement || !timerCircle) return;
+
         const startTime = Date.now();
         let timeLeft = this.settings.timeLimit;
 
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-        }
+        this.stopTimer();
 
         timerCircle.classList.remove('warning', 'danger', 'timeout', 'success');
         timerElement.textContent = timeLeft;
 
         const updateTimer = () => {
             if (this.currentScreen !== 'drill') {
-                if (this.timerInterval) {
-                    clearInterval(this.timerInterval);
-                    this.timerInterval = null;
-                }
+                this.stopTimer();
                 return;
             }
             
@@ -496,10 +448,7 @@ etUniversityData() {
             timerCircle.classList.remove('warning', 'danger', 'timeout');
             if (timeLeft <= 0) {
                 timerCircle.classList.add('timeout');
-                if (this.timerInterval) {
-                    clearInterval(this.timerInterval);
-                    this.timerInterval = null;
-                }
+                this.stopTimer();
                 this.timeoutQuestion();
                 return;
             } else if (timeLeft <= 1) {
@@ -511,14 +460,9 @@ etUniversityData() {
 
         updateTimer();
         this.timerInterval = setInterval(updateTimer, 100);
-    }    stopTime
-r() {
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
-        }
     }
 
+    // 回答選択
     selectAnswer(selectedAnswer) {
         this.stopTimer();
         
@@ -543,6 +487,7 @@ r() {
         }, 1500);
     }
 
+    // 回答ハイライト
     highlightAnswer(selectedAnswer, correctAnswer) {
         const optionBtns = document.querySelectorAll('.option-btn');
         const timerCircle = document.getElementById('timerCircle');
@@ -556,14 +501,13 @@ r() {
             btn.disabled = true;
         });
 
-        if (selectedAnswer === correctAnswer) {
+        if (selectedAnswer === correctAnswer && timerCircle) {
             timerCircle.classList.add('success');
         }
     }
 
+    // タイムアウト処理
     timeoutQuestion() {
-        this.stopTimer();
-        
         const question = this.questions[this.currentQuestion];
         const responseTime = Date.now() - this.questionStartTime;
 
@@ -585,6 +529,7 @@ r() {
         }, 1500);
     }
 
+    // 問題スキップ
     skipQuestion() {
         this.stopTimer();
         
@@ -607,18 +552,23 @@ r() {
             this.currentQuestion++;
             this.showQuestion();
         }, 1500);
-    }    s
-howHint() {
-        const question = this.questions[this.currentQuestion];
-        const hint = question.correctAnswer.charAt(0) + '...';
-        this.showToast(`ヒント: ${hint}`, 'info');
     }
 
+    // ヒント表示
+    showHint() {
+        const question = this.questions[this.currentQuestion];
+        if (question) {
+            const hint = question.correctAnswer.charAt(0) + '...';
+            this.showToast(`ヒント: ${hint}`, 'info');
+        }
+    }    /
+/ ドリル終了
     finishDrill() {
         const totalTime = Date.now() - this.startTime;
         const correctCount = this.userAnswers.filter(a => a.correct).length;
         const accuracy = Math.round((correctCount / this.userAnswers.length) * 100);
 
+        // セッション保存
         this.saveSession({
             date: new Date().toISOString(),
             answers: this.userAnswers,
@@ -626,45 +576,38 @@ howHint() {
             accuracy: accuracy
         });
 
-        this.updateStreak(accuracy);
-        this.showToast(`ドリル完了! 正答率: ${accuracy}%`, 'success');
-        this.showScreen('home');
-        this.updateDashboard();
-    }
-
-    updateStreak(accuracy) {
+        // ストリーク更新
         if (accuracy >= 70) {
             this.streakCount++;
         } else {
             this.streakCount = 0;
         }
         this.saveUserData();
+
+        // 結果表示
+        this.showToast(`ドリル完了! 正答率: ${accuracy}% (${correctCount}/${this.userAnswers.length})`, 'success');
+        
+        // ホーム画面に戻る
+        this.showScreen('home');
+        this.updateDashboard();
     }
 
-    startWeakPointDrill() {
-        this.showToast('苦手問題機能は開発中です', 'info');
-        this.startDrill();
-    }
-
-    startReview() {
-        this.showToast('復習機能は開発中です', 'info');
-        this.startDrill();
-    }
-
+    // レベルラベル取得
     getLevelLabel(level) {
         const labels = {
             basic: '基礎',
-            standard: '標準',
-            advanced: '上級',
-            unknown: '不明'
+            standard: '標準', 
+            advanced: '上級'
         };
         return labels[level] || '不明';
     }
 
+    // セッション保存
     saveSession(sessionData) {
         const history = this.getStoredData('history') || [];
         history.push(sessionData);
         
+        // 最新100セッションのみ保持
         if (history.length > 100) {
             history.splice(0, history.length - 100);
         }
@@ -672,6 +615,7 @@ howHint() {
         this.setStoredData('history', history);
     }
 
+    // ユーザーデータ読み込み
     loadUserData() {
         const savedSettings = this.getStoredData('settings');
         if (savedSettings) {
@@ -681,11 +625,14 @@ howHint() {
         this.streakCount = this.getStoredData('streakCount') || 0;
     }
 
+    // ユーザーデータ保存
     saveUserData() {
         this.setStoredData('settings', this.settings);
         this.setStoredData('streakCount', this.streakCount);
-    }   
- getStoredData(key) {
+    }
+
+    // ローカルストレージからデータ取得
+    getStoredData(key) {
         try {
             const data = localStorage.getItem('vocabMaster_' + key);
             return data ? JSON.parse(data) : null;
@@ -695,6 +642,7 @@ howHint() {
         }
     }
 
+    // ローカルストレージにデータ保存
     setStoredData(key, data) {
         try {
             localStorage.setItem('vocabMaster_' + key, JSON.stringify(data));
@@ -703,6 +651,7 @@ howHint() {
         }
     }
 
+    // トースト通知表示
     showToast(message, type = 'info') {
         try {
             const toast = document.createElement('div');
@@ -727,19 +676,22 @@ howHint() {
     }
 }
 
-// Initialize the application
+// アプリケーション初期化
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        console.log('Initializing VocabMaster...');
+        console.log('VocabMaster初期化中...');
         const app = new VocabMaster();
         await app.initialize();
+        console.log('VocabMaster初期化完了');
     } catch (error) {
-        console.error('Failed to initialize VocabMaster:', error);
-        // フォールバック: 最低限の表示
+        console.error('VocabMaster初期化失敗:', error);
+        
+        // フォールバック処理
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) {
             loadingScreen.style.display = 'none';
         }
+        
         alert('アプリの初期化に失敗しました。ページを再読み込みしてください。');
     }
 });
