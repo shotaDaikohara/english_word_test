@@ -27,16 +27,16 @@ class VocabMaster {
     }
 
     async init() {
-        this.showLoadingScreen();
-        
-        const loadingTimeout = setTimeout(() => {
-            console.warn('Loading timeout, forcing app to start');
-            this.hideLoadingScreen();
-            this.showScreen('home');
-            this.showToast('読み込みに時間がかかりました', 'warning');
-        }, 5000);
-        
         try {
+            this.showLoadingScreen();
+            
+            const loadingTimeout = setTimeout(() => {
+                console.warn('Loading timeout, forcing app to start');
+                this.hideLoadingScreen();
+                this.showScreen('home');
+                this.showToast('読み込みに時間がかかりました', 'warning');
+            }, 5000);
+            
             await this.loadWordDatabase();
             this.loadUserData();
             this.setupEventListeners();
@@ -49,22 +49,40 @@ class VocabMaster {
             this.showToast('VocabMasterへようこそ！', 'success');
         } catch (error) {
             console.error('Initialization error:', error);
-            clearTimeout(loadingTimeout);
-            this.hideLoadingScreen();
+            // フォールバック: エラーが発生してもアプリを開始
+            try {
+                this.hideLoadingScreen();
+            } catch (e) {
+                // ローディング画面の非表示に失敗した場合
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                }
+            }
             this.showScreen('home');
             this.showToast('初期化エラーが発生しました', 'error');
         }
-    }    s
-howLoadingScreen() {
-        document.getElementById('loadingScreen').style.display = 'flex';
+    }
+
+    showLoadingScreen() {
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'flex';
+        } else {
+            console.warn('Loading screen element not found');
+        }
     }
 
     hideLoadingScreen() {
         const loadingScreen = document.getElementById('loadingScreen');
-        loadingScreen.classList.add('hidden');
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-        }, 300);
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 300);
+        } else {
+            console.warn('Loading screen element not found');
+        }
     }
 
     async loadWordDatabase() {
@@ -683,20 +701,41 @@ howHint() {
     }
 
     showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
+        try {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
 
-        const container = document.getElementById('toastContainer');
-        container.appendChild(toast);
+            const container = document.getElementById('toastContainer');
+            if (container) {
+                container.appendChild(toast);
 
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 3000);
+            } else {
+                console.log(`Toast: ${message}`);
+            }
+        } catch (error) {
+            console.log(`Toast: ${message}`);
+        }
     }
 }
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    new VocabMaster();
+    try {
+        console.log('Initializing VocabMaster...');
+        new VocabMaster();
+    } catch (error) {
+        console.error('Failed to initialize VocabMaster:', error);
+        // フォールバック: 最低限の表示
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+        alert('アプリの初期化に失敗しました。ページを再読み込みしてください。');
+    }
 });
