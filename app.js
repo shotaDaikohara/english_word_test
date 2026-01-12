@@ -12,6 +12,7 @@ class VocabMaster {
         this.wordAnalysisChart = null;
         this.wordDatabase = [];
         this.streakCount = 0;
+        this.timerInterval = null; // タイマーインターバルを追加
         this.settings = {
             targetUniversity: 'tokyo',
             difficultyLevel: 'standard',
@@ -161,6 +162,11 @@ class VocabMaster {
     }
 
     showScreen(screenName) {
+        // タイマーをクリーンアップ
+        if (screenName !== 'drill') {
+            this.stopTimer();
+        }
+        
         // Update navigation
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`[data-screen="${screenName}"]`)?.classList.add('active');
@@ -402,12 +408,24 @@ class VocabMaster {
         const timerCircle = document.getElementById('timerCircle');
         const startTime = Date.now();
         let timeLeft = this.settings.timeLimit;
+        
+        // 既存のタイマーをクリア
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
 
         timerCircle.classList.remove('warning', 'danger', 'timeout', 'success');
         timerElement.textContent = timeLeft;
 
         const updateTimer = () => {
-            if (this.currentScreen !== 'drill') return;
+            // ドリル画面でない場合はタイマー停止
+            if (this.currentScreen !== 'drill') {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+                return;
+            }
             
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
             timeLeft = Math.max(0, this.settings.timeLimit - elapsed);
@@ -417,6 +435,10 @@ class VocabMaster {
             timerCircle.classList.remove('warning', 'danger', 'timeout');
             if (timeLeft <= 0) {
                 timerCircle.classList.add('timeout');
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
                 this.timeoutQuestion();
                 return;
             } else if (timeLeft <= 1) {
@@ -424,14 +446,26 @@ class VocabMaster {
             } else if (timeLeft <= 2) {
                 timerCircle.classList.add('warning');
             }
-
-            setTimeout(updateTimer, 100);
         };
 
+        // 初回実行
         updateTimer();
+        
+        // 100msごとに更新
+        this.timerInterval = setInterval(updateTimer, 100);
+    }
+
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
     }
 
     selectAnswer(selectedAnswer) {
+        // タイマーを停止
+        this.stopTimer();
+        
         const question = this.questions[this.currentQuestion];
         const responseTime = Date.now() - this.questionStartTime;
         const isCorrect = selectedAnswer === question.correctAnswer;
@@ -476,6 +510,9 @@ class VocabMaster {
     }
 
     timeoutQuestion() {
+        // タイマーを停止
+        this.stopTimer();
+        
         const question = this.questions[this.currentQuestion];
         const responseTime = Date.now() - this.questionStartTime;
 
@@ -502,6 +539,9 @@ class VocabMaster {
     }
 
     skipQuestion() {
+        // タイマーを停止
+        this.stopTimer();
+        
         const question = this.questions[this.currentQuestion];
         const responseTime = Date.now() - this.questionStartTime;
 
