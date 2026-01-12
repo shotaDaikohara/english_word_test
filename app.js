@@ -22,8 +22,11 @@ class VocabMaster {
             dailyReminder: false,
             soundEffects: true
         };
-        
-        this.init();
+    }
+
+    // 初期化メソッドを外部から呼び出し可能にする
+    async initialize() {
+        await this.init();
     }
 
     async init() {
@@ -725,10 +728,11 @@ howHint() {
 }
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('Initializing VocabMaster...');
-        new VocabMaster();
+        const app = new VocabMaster();
+        await app.initialize();
     } catch (error) {
         console.error('Failed to initialize VocabMaster:', error);
         // フォールバック: 最低限の表示
