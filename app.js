@@ -11,6 +11,7 @@ class VocabMaster {
         this.speedChart = null;
         this.wordAnalysisChart = null;
         this.wordDatabase = [];
+        this.universityWords = {}; // 大学別単語データを追加
         this.streakCount = 0;
         this.timerInterval = null; // タイマーインターバルを追加
         this.settings = {
@@ -50,14 +51,21 @@ class VocabMaster {
 
     async loadWordDatabase() {
         try {
-            const response = await fetch('words.csv');
-            const csvText = await response.text();
-            this.wordDatabase = this.parseCSV(csvText);
+            // 単語データベースを読み込み
+            const wordsResponse = await fetch('words.csv');
+            const wordsText = await wordsResponse.text();
+            this.wordDatabase = this.parseCSV(wordsText);
+
+            // 大学別単語データを読み込み
+            const universityResponse = await fetch('university_words.csv');
+            const universityText = await universityResponse.text();
+            this.universityWords = this.parseUniversityCSV(universityText);
         } catch (error) {
             console.error('Failed to load word database:', error);
             this.showToast('単語データの読み込みに失敗しました', 'error');
             // Fallback to embedded data
             this.wordDatabase = this.getFallbackWords();
+            this.universityWords = this.getFallbackUniversityWords();
         }
     }
 
@@ -82,11 +90,44 @@ class VocabMaster {
         return words;
     }
 
-    getFallbackWords() {
-        return [
-            { word: "abandon", meaning: "捨てる・放棄する", level: "basic", frequency: "high", category: "verb", example: "He had to abandon his car." },
-            { word: "ability", meaning: "能力", level: "basic", frequency: "high", category: "noun", example: "She has great ability." }
-        ];
+    parseUniversityCSV(csvText) {
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',');
+        const universityWords = {};
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            if (values.length >= 4) {
+                const university = values[0];
+                const word = values[1];
+                const frequency = values[2];
+                const importance = parseInt(values[3]);
+
+                if (!universityWords[university]) {
+                    universityWords[university] = [];
+                }
+
+                universityWords[university].push({
+                    word: word,
+                    frequency: frequency,
+                    importance: importance
+                });
+            }
+        }
+        return universityWords;
+    }
+
+    getFallbackUniversityWords() {
+        return {
+            tokyo: [
+                { word: "abandon", frequency: "high", importance: 5 },
+                { word: "ability", frequency: "high", importance: 5 }
+            ],
+            kyoto: [
+                { word: "abandon", frequency: "high", importance: 5 },
+                { word: "ability", frequency: "high", importance: 5 }
+            ]
+        };
     } 
    setupEventListeners() {
         // Navigation
@@ -167,8 +208,8 @@ class VocabMaster {
             this.stopTimer();
         }
         
-        // Update navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        // Update bottom navigation
+        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`[data-screen="${screenName}"]`)?.classList.add('active');
 
         // Update screens
@@ -196,9 +237,9 @@ class VocabMaster {
         document.getElementById('avgTime').textContent = stats.avgTime + 's';
         document.getElementById('targetUniv').textContent = targetUniv.name;
 
-        // Calculate and display pass rate
-        const passRate = this.calculatePassRate(stats, targetUniv);
-        document.getElementById('passRate').textContent = passRate + '%';
+        // Calculate and display coverage rate
+        const coverageRate = this.calculatePassRate(stats, targetUniv);
+        document.getElementById('passRate').textContent = coverageRate + '%';
 
         // Update streak counter
         document.getElementById('streakCount').textContent = this.streakCount;
@@ -233,22 +274,53 @@ class VocabMaster {
         };
     }
 
+    getFallbackWords() {
+        return [
+            { word: "abandon", meaning: "捨てる・放棄する", level: "basic", frequency: "high", category: "verb", example: "He had to abandon his car." },
+            { word: "ability", meaning: "能力", level: "basic", frequency: "high", category: "noun", example: "She has great ability." }
+        ];
+    }
+
     getUniversityData() {
         return {
-            tokyo: { name: "東京大学", requiredAccuracy: 90, requiredSpeed: 3 },
-            kyoto: { name: "京都大学", requiredAccuracy: 88, requiredSpeed: 3.5 },
-            waseda: { name: "早稲田大学", requiredAccuracy: 85, requiredSpeed: 4 },
-            keio: { name: "慶應義塾大学", requiredAccuracy: 85, requiredSpeed: 4 },
-            sophia: { name: "上智大学", requiredAccuracy: 82, requiredSpeed: 4.5 },
-            march: { name: "MARCH", requiredAccuracy: 80, requiredSpeed: 5 },
-            kansai: { name: "関関同立", requiredAccuracy: 78, requiredSpeed: 5.5 }
+            tokyo: { name: "東京大学", requiredCoverage: 90 },
+            kyoto: { name: "京都大学", requiredCoverage: 85 },
+            waseda: { name: "早稲田大学", requiredCoverage: 80 },
+            keio: { name: "慶應義塾大学", requiredCoverage: 80 },
+            sophia: { name: "上智大学", requiredCoverage: 75 },
+            march: { name: "MARCH", requiredCoverage: 70 },
+            kansai: { name: "関関同立", requiredCoverage: 65 }
         };
     }
 
     calculatePassRate(stats, targetUniv) {
-        const accuracyScore = Math.min(stats.accuracyRate / targetUniv.requiredAccuracy, 1) * 50;
-        const speedScore = Math.min(targetUniv.requiredSpeed / Math.max(stats.avgTime, 1), 1) * 50;
-        return Math.round(accuracyScore + speedScore);
+        // 試験範囲カバー率を計算
+        const coverageRate = this.calculateCoverageRate(this.settings.targetUniversity);
+        return Math.round(coverageRate);
+    }
+
+    calculateCoverageRate(university) {
+        const universityWordList = this.universityWords[university];
+        if (!universityWordList) return 0;
+
+        const history = this.getStoredData('history') || [];
+        const masteredWords = this.getMasteredWords(history);
+        const masteredWordSet = new Set(masteredWords.map(w => w.word));
+
+        // 重要度別の重み付けでカバー率を計算
+        let totalWeight = 0;
+        let masteredWeight = 0;
+
+        universityWordList.forEach(wordData => {
+            const weight = wordData.importance;
+            totalWeight += weight;
+            
+            if (masteredWordSet.has(wordData.word)) {
+                masteredWeight += weight;
+            }
+        });
+
+        return totalWeight > 0 ? (masteredWeight / totalWeight) * 100 : 0;
     }
 
     updateLevelProgress() {
@@ -654,6 +726,9 @@ class VocabMaster {
                 break;
             case 'weakness':
                 this.showWeaknessList();
+                break;
+            case 'coverage':
+                this.showCoverageAnalysis();
                 break;
         }
     }
@@ -1536,6 +1611,63 @@ class VocabMaster {
                 }
                 return a.accuracy - b.accuracy;
             });
+    }
+
+    showCoverageAnalysis() {
+        const container = document.getElementById('coverageList');
+        if (!container) return;
+
+        const universityData = this.getUniversityData();
+        const coverageData = [];
+
+        Object.keys(universityData).forEach(univKey => {
+            const univ = universityData[univKey];
+            const coverageRate = this.calculateCoverageRate(univKey);
+            const universityWordList = this.universityWords[univKey] || [];
+            const totalWords = universityWordList.length;
+            
+            const history = this.getStoredData('history') || [];
+            const masteredWords = this.getMasteredWords(history);
+            const masteredWordSet = new Set(masteredWords.map(w => w.word));
+            const masteredCount = universityWordList.filter(w => masteredWordSet.has(w.word)).length;
+
+            coverageData.push({
+                name: univ.name,
+                key: univKey,
+                coverage: Math.round(coverageRate),
+                masteredCount: masteredCount,
+                totalWords: totalWords,
+                isTarget: univKey === this.settings.targetUniversity
+            });
+        });
+
+        // カバー率順にソート
+        coverageData.sort((a, b) => b.coverage - a.coverage);
+
+        container.innerHTML = coverageData.map(data => `
+            <div class="coverage-item ${data.isTarget ? 'target' : ''}">
+                <div class="coverage-header">
+                    <span class="university-name">${data.name}</span>
+                    <span class="coverage-rate coverage-${this.getCoverageClass(data.coverage)}">${data.coverage}%</span>
+                </div>
+                <div class="coverage-details">
+                    <div class="coverage-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${data.coverage}%"></div>
+                        </div>
+                    </div>
+                    <div class="coverage-stats">
+                        マスター単語: ${data.masteredCount}/${data.totalWords}語
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    getCoverageClass(coverage) {
+        if (coverage >= 80) return 'high';
+        if (coverage >= 60) return 'medium';
+        return 'low';
     }
 }
 
